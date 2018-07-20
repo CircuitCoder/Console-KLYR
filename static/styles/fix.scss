@@ -1,0 +1,16 @@
+body {
+  margin: 0;
+}
+
+* {
+  box-sizing: inherit;
+}
+
+html {
+  box-sizing: border-box;
+}
+
+.mdc-toolbar-row {
+  height: 0;
+  // IDK why we have to have this
+}

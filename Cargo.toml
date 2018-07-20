@@ -1,0 +1,10 @@
+[package]
+name = "console_klyr"
+version = "0.1.0"
+authors = ["Liu Xiaoyi <circuitcoder0@gmail.com>"]
+
+[dependencies]
+actix-web="*"
+
+[dependencies.redis]
+git = "https://github.com/mitsuhiko/redis-rs.git"
