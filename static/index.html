@@ -5,12 +5,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Loading... | KLYR</title>
+  <title>Home | KLYR</title>
 
   <link rel="stylesheet" href="https://fonts.proxy.ustclug.org/icon?family=Material+Icons">
   <link rel="stylesheet" href="https://fonts.proxy.ustclug.org/icon?family=Roboto">
   <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/babel-polyfill/dist/polyfill.min.js"></script>
   <script src="https://unpkg.com/vue/dist/vue.min.js"></script>
+  <script src="https://unpkg.com/vue-router/dist/vue-router.min.js"></script>
   <script src="https://unpkg.com/vue-mdc-adapter/dist/vue-mdc-adapter.min.js"></script>
   <script src="/static/script.js"></script>
 </head>
@@ -18,15 +20,15 @@
 <body onload="bootstrap()">
   <div id="app">
     <mdc-layout-app>
-      <mdc-toolbar slot="toolbar">
+      <mdc-toolbar slot="toolbar" waterfall>
         <mdc-toolbar-row>
           <mdc-toolbar-section align-start>
             <mdc-toolbar-menu-icon event="toggle-drawer">
             </mdc-toolbar-menu-icon>
-            <mdc-toolbar-title>Title</mdc-toolbar-title>
+            <mdc-toolbar-title>{{ title }}</mdc-toolbar-title>
           </mdc-toolbar-section>
           <mdc-toolbar-section align-end>
-            <mdc-toolbar-icon event="show-help" icon="help">
+            <mdc-toolbar-icon event="toggle-help" icon="help">
             </mdc-toolbar-icon>
           </mdc-toolbar-section>
         </mdc-toolbar-row>
@@ -34,28 +36,20 @@
 
       <mdc-drawer slot="drawer" toggle-on="toggle-drawer" persistent>
         <mdc-drawer-list>
+          <mdc-drawer-item start-icon="art_track" :to="{ name: 'Home' }">News</mdc-drawer-item>
+          <mdc-drawer-item start-icon="merge_type">Reactor Tree View</mdc-drawer-item>
+          <mdc-drawer-divider></mdc-drawer-divider>
           <mdc-drawer-item start-icon="inbox">Inbox</mdc-drawer-item>
-          <mdc-drawer-item start-icon="send">Sent Mail</mdc-drawer-item>
-          <mdc-drawer-item start-icon="drafts">Drafts</mdc-drawer-item>
+          <mdc-drawer-item start-icon="timer">Chronometer</mdc-drawer-item>
         </mdc-drawer-list>
       </mdc-drawer>
 
-      <main>
-        <mdc-card class="card-demo">
-          <mdc-card-header title="Title goes here" subtitle="Subtitle goes  here " large-title>
-          </mdc-card-header>
-          <mdc-card-text>
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-            Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-          </mdc-card-text>
-          <mdc-card-actions>
-            <mdc-card-action-button>Action 1</mdc-card-action-button>
-            <mdc-card-action-button>Action 2</mdc-card-action-button>
-          </mdc-card-actions>
-        </mdc-card>
-        <mdc-fab fixed icon="edit" />
-      </main>
+      <transition name="fade" mode="out-in">
+        <router-view
+          @snack="snack($event)"></router-view>
+      </transition>
 
+      <mdc-snackbar ref="snackbar"></mdc-snackbar>
     </mdc-layout-app>
   </div>
 </body>

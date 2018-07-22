@@ -1,0 +1,22 @@
+<main>
+  <mdc-headline>Submit News</mdc-headline>
+  <mdc-card class="card-demo">
+    <mdc-card-text>
+      <mdc-layout-grid>
+        <mdc-layout-cell desktop="6" phone="12" align="bottom">
+          <mdc-textfield class="expand-width" v-model="title" label="Title" box></mdc-textfield>
+        </mdc-layout-cell>
+        <mdc-layout-cell desktop="6" phone="12" align="bottom">
+          <mdc-select class="expand-width" v-model="category" label="Category" box>
+            <option>A</option>
+            <option>B</option>
+          </mdc-select>
+        </mdc-layout-cell>
+        <mdc-layout-cell desktop="12" phone="12" align="bottom">
+          <mdc-textfield v-model="content" label="Content" multiline class="expand-width"></mdc-textfield>
+        </mdc-layout-cell>
+      </mdc-layout-grid>
+    </mdc-card-text>
+  </mdc-card>
+  <mdc-fab fixed icon="done" @click="submit()">
+</main>

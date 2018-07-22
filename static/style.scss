@@ -4,3 +4,21 @@ $mdc-theme-background: #fff;
 
 @import 'vue-mdc-adapter/dist/styles';
 @import 'styles/fix';
+@import 'styles/transitions';
+
+.mdc-layout-app--content-wrapper {
+  background: #eceff1;
+}
+
+main {
+  max-width: 900px;
+  padding: 60px 40px;
+  margin: 0 auto;
+}
+
+.expand-width {
+  width: 100%;
+  .mdc-textfield {
+    width: 100%;
+  }
+}

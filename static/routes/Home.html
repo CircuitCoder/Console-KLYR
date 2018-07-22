@@ -1,0 +1,9 @@
+<main>
+  <mdc-card v-for="e of entries">
+    <mdc-card-header :title="e.title" :subtitle="e.tags[0]" large-title>
+    </mdc-card-header>
+    <mdc-card-text v-text="e.content">
+    </mdc-card-text>
+  </mdc-card>
+  <mdc-fab fixed icon="add" :to="{ name: 'NewPost' }">
+</main>

@@ -36,6 +36,10 @@ module.exports = {
         test: /\.js$/,
         loader: 'babel-loader',
       },
+      {
+        test: /\.html$/,
+        loader: 'html-loader',
+      },
     ],
   },
 
