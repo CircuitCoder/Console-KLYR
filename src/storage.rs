@@ -4,6 +4,7 @@ use actix_redis;
 use actix_redis::{Command, RedisActor, RespValue};
 use data::*;
 use futures::future;
+use futures::future::Either;
 use futures::prelude::*;
 use serde_json;
 use std::fmt;
@@ -14,6 +15,8 @@ pub enum StorageError {
 	Redis(actix_redis::Error),
 	Format,
 	InvalidArgument,
+	DivergedState,
+	Racing,
 }
 
 impl fmt::Display for StorageError {
@@ -24,6 +27,8 @@ impl fmt::Display for StorageError {
 			&Redis(_) => write!(f, "StorageError: Redis"),
 			&Format => write!(f, "StorageError: Format"),
 			&InvalidArgument => write!(f, "StorageError: InvalidArgument"),
+			&DivergedState => write!(f, "StorageError: DivergedState"),
+			&Racing => write!(f, "StorageError: Racing"),
 		}
 	}
 }
@@ -64,14 +69,13 @@ impl Storage {
 		self
 			.db
 			.send(Command(RespValue::Array(vec![
-				"LRANGE".into(),
+				"ZREVRANGE".into(),
 				key.into(),
 				0.to_string().into(),
 				(-1).to_string().into(),
 			])))
 			.from_err()
 			.and_then(|f| {
-				debug!("Response from DB: {:?}", f);
 				let value = match f {
 					Ok(v) => v,
 					Err(e) => return future::err(e.into()),
@@ -103,7 +107,7 @@ impl Storage {
 		// Currently we ignore malformat contents
 
 		if posts.len() == 0 {
-			return future::Either::A(future::ok(vec![]))
+			return future::Either::A(future::ok(vec![]));
 		}
 
 		let mut cmd = vec!["MGET".into()];
@@ -154,8 +158,8 @@ impl Storage {
 	pub fn put_post(&self, p: &Post) -> Box<dyn Future<Item = (), Error = StorageError>> {
 		// This is for update
 
-		let id = match p.db_id() {
-			Some(id) => id,
+		let id = match p.id {
+			Some(id) => format!("post:pending:{}", id),
 			None => return Box::new(future::err(StorageError::InvalidArgument)),
 		};
 
@@ -163,33 +167,155 @@ impl Storage {
 			Ok(f) => f,
 			Err(_) => return Box::new(future::err(StorageError::Format)),
 		};
-		
-		Box::new(self.db.send(Command(RespValue::Array(vec![
-			"SET".into(),
-			id.into(),
-			formatted.into(),
-		])))
-		.from_err()
-		.map(|_| ()))
+
+		Box::new(
+			self
+				.db
+				.send(Command(RespValue::Array(vec![
+					"SET".into(),
+					id.into(),
+					formatted.into(),
+				])))
+				.from_err()
+				.map(|_| ()),
+		)
+	}
+
+	pub fn accept_post(&self, id: i64) -> impl Future<Item = (), Error = StorageError> {
+		let original = format!("post:pending:{}", id);
+		let target = format!("post:content:{}", id);
+
+		self
+			.db
+			.send(Command(RespValue::Array(vec![
+				"RENAMENX".into(),
+				original.into_bytes().into(),
+				target.clone().into_bytes().into(),
+			])))
+			.from_err()
+			.and_then(|r| {
+				let inner = match r {
+					Ok(v) => v,
+					_ => return future::err(StorageError::DivergedState),
+				};
+
+				match inner {
+					RespValue::Error(_) => future::err(StorageError::DivergedState),
+					_ => future::ok(()),
+				}
+			})
+	}
+
+	pub fn apply_index(&self, p: &Post) -> impl Future<Item = (), Error = StorageError> {
+		let id = match p.id {
+			Some(id) => id,
+			None => return Either::A(future::err(StorageError::InvalidArgument)),
+		};
+		let mut command = format!("redis.call('ZADD', 'post:tag:', '{}', {})\n", id, id);
+		for e in p.tags.iter() {
+			command += &format!("redis.call('ZADD', 'post:tag:{}', '{}', {})\n", e, id, id);
+		}
+		Either::B(
+			self
+				.db
+				.send(Command(RespValue::Array(vec![
+					"EVAL".into(),
+					command.into(),
+					0.to_string().into_bytes().into(),
+				])))
+				.from_err()
+				.and_then(|r| {
+					let inner = match r {
+						Ok(v) => v,
+						_ => return future::err(StorageError::DivergedState),
+					};
+
+					match inner {
+						RespValue::Error(_) => future::err(StorageError::DivergedState),
+						_ => future::ok(()),
+					}
+				}),
+		)
+	}
+
+	pub fn delete_post(&self, id: i64) -> impl Future<Item = (), Error = StorageError> {
+		// TODO: merge with accept_post
+		let original = format!("post:content:{}", id);
+		let target = format!("post:deleted:{}", id);
+
+		self
+			.db
+			.send(Command(RespValue::Array(vec![
+				"RENAMENX".into(),
+				original.into_bytes().into(),
+				target.clone().into_bytes().into(),
+			])))
+			.from_err()
+			.and_then(|r| {
+				let inner = match r {
+					Ok(v) => v,
+					_ => return future::err(StorageError::DivergedState),
+				};
+
+				match inner {
+					RespValue::Error(_) => future::err(StorageError::DivergedState),
+					_ => future::ok(()),
+				}
+			})
+	}
+
+	pub fn remove_index(&self, p: &Post) -> impl Future<Item = (), Error = StorageError> {
+		// TODO: merge with apply_index
+		let id = match p.id {
+			Some(id) => id,
+			None => return Either::A(future::err(StorageError::InvalidArgument)),
+		};
+		let mut command = format!("redis.call('ZREM', 'post:tag:', '{}')\n", id);
+		for e in p.tags.iter() {
+			command += &format!("redis.call('ZREM', 'post:tag:{}', '{}')\n", e, id);
+		}
+		Either::B(
+			self
+				.db
+				.send(Command(RespValue::Array(vec![
+					"EVAL".into(),
+					command.into(),
+					0.to_string().into_bytes().into(),
+				])))
+				.from_err()
+				.and_then(|r| {
+					let inner = match r {
+						Ok(v) => v,
+						_ => return future::err(StorageError::DivergedState),
+					};
+
+					match inner {
+						RespValue::Error(_) => future::err(StorageError::DivergedState),
+						_ => future::ok(()),
+					}
+				}),
+		)
 	}
 
 	pub fn fetch_next_post_id(&self) -> impl Future<Item = i64, Error = StorageError> {
-		self.db.send(Command(RespValue::Array(vec![
-			"INCR".into(),
-			"post:counter".to_owned().into_bytes().into(),
-		])))
-		.from_err()
-		.and_then(|counter| {
-			let counter = match counter {
-				Ok(v) => v,
-				Err(_) => return future::err(StorageError::Format),
-			};
+		self
+			.db
+			.send(Command(RespValue::Array(vec![
+				"INCR".into(),
+				"post:counter".to_owned().into_bytes().into(),
+			])))
+			.from_err()
+			.and_then(|counter| {
+				let counter = match counter {
+					Ok(v) => v,
+					Err(_) => return future::err(StorageError::Format),
+				};
 
-			match counter {
-				RespValue::Integer(i) => future::ok(i),
-				_ => future::err(StorageError::Format),
-			}
-		})
+				match counter {
+					RespValue::Integer(i) => future::ok(i),
+					_ => future::err(StorageError::Format),
+				}
+			})
 	}
 }
 

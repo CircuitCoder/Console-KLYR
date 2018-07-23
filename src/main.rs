@@ -34,7 +34,11 @@ fn build_app() -> App<State> {
 			r.method(Method::POST).f(handler::post::new_post)
 		})
 		.resource("/api/posts/{id}", |r| {
-			r.method(Method::PUT).with(handler::post::update_post)
+			r.method(Method::PUT).with(handler::post::update_post);
+			r.method(Method::DELETE).f(handler::post::delete_post)
+		})
+		.resource("/api/posts/{id}/accept", |r| {
+			r.method(Method::PUT).f(handler::post::accept_post)
 		})
 		.handler("/static", fs::StaticFiles::new("./static-dist").unwrap())
 		.default_resource(|r| r.method(Method::GET).f(get_index))

@@ -1,12 +1,13 @@
-#[derive(Serialize, Deserialize)]
-pub struct Post {
-	id: Option<i64>,
-	tags: Vec<String>,
-	author: String,
-	title: String,
-	content: String,
+use std::time::SystemTime;
 
-	deleted: bool,
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Post {
+	pub(crate) id: Option<i64>,
+	pub(crate) tags: Vec<String>,
+	pub(crate) author: String,
+	pub(crate) title: String,
+	pub(crate) content: String,
+	pub(crate) time: u64,
 }
 
 impl Post {
@@ -17,16 +18,14 @@ impl Post {
 			author: "root".to_string(),
 			title: "Demo".to_string(),
 			content: "This is a demo post".to_string(),
-
-			deleted: false,
+			time: SystemTime::now()
+				.duration_since(SystemTime::UNIX_EPOCH)
+				.unwrap()
+				.as_secs(),
 		}
 	}
 
-	pub fn db_id(&self) -> Option<String> {
-		self.id.map(|id| format!("post:content:{}", id))
-	}
-
-  /**
+	/**
 	 *  Will silently fail if the id is present
 	 */
 	pub fn set_id(&mut self, id: i64) {
@@ -63,4 +62,18 @@ pub struct Step {
 pub struct Comment {
 	content: String,
 	author: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum Message {
+	WaitingReview { id: u64 },
+	ReviewPassed { id: u64 },
+	ReviewRejected { id: u64 },
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Chronometer {
+	anchor: u64,
+	real: u64,
+	ratio: f64,
 }

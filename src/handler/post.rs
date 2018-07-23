@@ -8,6 +8,9 @@ use actix_web::State;
 use data::*;
 use futures::{future, Future};
 use handler::{AsyncResponse, Request};
+use actix_web::FromRequest;
+use storage::StorageError;
+use futures::future::Either;
 
 pub fn list_posts(req: &Request) -> AsyncResponse {
 	let _req = req.clone();
@@ -72,4 +75,60 @@ pub fn update_post(
 		.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
 		.map_err(|e| e.into())
 		.responder()
+}
+
+pub fn accept_post(req: &Request) -> AsyncResponse {
+	let _req = req.clone();
+	let _req2 = req.clone();
+
+	let id = Path::<(i64,)>::extract(req);
+	let id = match id {
+		Ok(id) => id,
+		Err(_) => return future::err(error::ErrorNotFound("Invalid id field")).responder(),
+	};
+
+	req.state()
+	.storage
+	.accept_post(id.0)
+	.and_then(move |_| {
+		_req.state().storage.fetch_posts(vec![id.0.to_string()])
+	})
+	.and_then(move |posts| {
+		if posts.len() != 1 {
+			return Either::A(future::err(StorageError::Racing));
+		}
+
+		Either::B(_req2.state().storage.apply_index(&posts[0]))
+	})
+	.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
+	.map_err(|e| e.into())
+	.responder()
+}
+
+pub fn delete_post(req: &Request) -> AsyncResponse {
+	let _req = req.clone();
+	let _req2 = req.clone();
+
+	let id = Path::<(i64,)>::extract(req);
+	let id = match id {
+		Ok(id) => id,
+		Err(_) => return future::err(error::ErrorNotFound("Invalid id field")).responder(),
+	};
+
+	req.state()
+	.storage
+	.fetch_posts(vec![id.0.to_string()])
+	.and_then(move |posts| {
+		if posts.len() != 1 {
+			return Either::A(future::err(StorageError::Racing));
+		}
+
+		Either::B(_req.state().storage.remove_index(&posts[0]))
+	})
+	.and_then(move |_| {
+		_req2.state().storage.delete_post(id.0)
+	})
+	.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
+	.map_err(|e| e.into())
+	.responder()
 }
