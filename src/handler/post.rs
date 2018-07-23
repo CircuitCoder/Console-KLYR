@@ -1,16 +1,17 @@
+use actix_web;
 use actix_web::error;
 use actix_web::AsyncResponder;
+use actix_web::FromRequest;
 use actix_web::HttpMessage;
 use actix_web::HttpResponse;
-use actix_web::Path;
 use actix_web::Json;
+use actix_web::Path;
 use actix_web::State;
 use data::*;
+use futures::future::Either;
 use futures::{future, Future};
 use handler::{AsyncResponse, Request};
-use actix_web::FromRequest;
 use storage::StorageError;
-use futures::future::Either;
 
 pub fn list_posts(req: &Request) -> AsyncResponse {
 	let _state = req.state().clone();
@@ -31,12 +32,19 @@ pub fn new_post(req: &Request) -> AsyncResponse {
 	req
 		.json()
 		.from_err()
-		.and_then(move |mut payload: Post| {
+		.join(req.state().storage.get_chrono_spec().map_err(|e| {
+			let error: actix_web::Error = e.into();
+			error
+		}))
+		.and_then(move |(mut payload, chrono): (Post, _)| {
 			if payload.has_id() {
 				return future::Either::A(future::err(error::ErrorBadRequest(
 					"No ID field should be present",
 				)));
 			}
+
+			// Overwrite time field
+			payload.time = chrono.now();
 
 			future::Either::B(
 				_state
@@ -56,21 +64,21 @@ pub fn new_post(req: &Request) -> AsyncResponse {
 pub fn update_post(
 	(path, mut payload, state): (Path<(i64,)>, Json<Post>, State<::handler::State>),
 ) -> AsyncResponse {
-	// TODO: verify that it is not published yet
+	// TODO: authenticate
 
 	if payload.has_id() {
-		return future::err(error::ErrorBadRequest(
-			"No ID field should be present",
-		)).responder();
+		return future::err(error::ErrorBadRequest("No ID field should be present")).responder();
 	}
 
 	payload.set_id(path.0);
 
-	// TODO: authenticate
-
 	state
 		.storage
-		.put_post(&payload)
+		.get_chrono_spec()
+		.and_then(move |chrono| {
+			payload.time = chrono.now();
+			state.storage.put_post(&payload)
+		})
 		.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
 		.map_err(|e| e.into())
 		.responder()
@@ -86,22 +94,21 @@ pub fn accept_post(req: &Request) -> AsyncResponse {
 		Err(_) => return future::err(error::ErrorNotFound("Invalid id field")).responder(),
 	};
 
-	req.state()
-	.storage
-	.accept_post(id.0)
-	.and_then(move |_| {
-		_state.storage.fetch_posts(vec![id.0.to_string()])
-	})
-	.and_then(move |posts| {
-		if posts.len() != 1 {
-			return Either::A(future::err(StorageError::Racing));
-		}
+	req
+		.state()
+		.storage
+		.accept_post(id.0)
+		.and_then(move |_| _state.storage.fetch_posts(vec![id.0.to_string()]))
+		.and_then(move |posts| {
+			if posts.len() != 1 {
+				return Either::A(future::err(StorageError::Racing));
+			}
 
-		Either::B(_state2.storage.apply_index(&posts[0]))
-	})
-	.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
-	.map_err(|e| e.into())
-	.responder()
+			Either::B(_state2.storage.apply_index(&posts[0]))
+		})
+		.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
+		.map_err(|e| e.into())
+		.responder()
 }
 
 pub fn delete_post(req: &Request) -> AsyncResponse {
@@ -114,20 +121,19 @@ pub fn delete_post(req: &Request) -> AsyncResponse {
 		Err(_) => return future::err(error::ErrorNotFound("Invalid id field")).responder(),
 	};
 
-	req.state()
-	.storage
-	.fetch_posts(vec![id.0.to_string()])
-	.and_then(move |posts| {
-		if posts.len() != 1 {
-			return Either::A(future::err(StorageError::Racing));
-		}
+	req
+		.state()
+		.storage
+		.fetch_posts(vec![id.0.to_string()])
+		.and_then(move |posts| {
+			if posts.len() != 1 {
+				return Either::A(future::err(StorageError::Racing));
+			}
 
-		Either::B(_state.storage.remove_index(&posts[0]))
-	})
-	.and_then(move |_| {
-		_state2.storage.delete_post(id.0)
-	})
-	.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
-	.map_err(|e| e.into())
-	.responder()
+			Either::B(_state.storage.remove_index(&posts[0]))
+		})
+		.and_then(move |_| _state2.storage.delete_post(id.0))
+		.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
+		.map_err(|e| e.into())
+		.responder()
 }
