@@ -13,11 +13,11 @@ use storage::StorageError;
 use futures::future::Either;
 
 pub fn list_posts(req: &Request) -> AsyncResponse {
-	let _req = req.clone();
+	let _state = req.state().clone();
 	let tag = req.query().get("tag").cloned();
 
 	let filter_fut = req.state().storage.filter_posts(tag);
-	let post_fut = filter_fut.and_then(move |ids| _req.state().storage.fetch_posts(ids));
+	let post_fut = filter_fut.and_then(move |ids| _state.storage.fetch_posts(ids));
 
 	post_fut
 		.map_err(|e| e.into())
@@ -26,7 +26,7 @@ pub fn list_posts(req: &Request) -> AsyncResponse {
 }
 
 pub fn new_post(req: &Request) -> AsyncResponse {
-	let _req = req.clone();
+	let _state = req.state().clone();
 
 	req
 		.json()
@@ -39,13 +39,12 @@ pub fn new_post(req: &Request) -> AsyncResponse {
 			}
 
 			future::Either::B(
-				_req
-					.state()
+				_state
 					.storage
 					.fetch_next_post_id()
 					.and_then(move |id| {
 						payload.set_id(id);
-						_req.state().storage.put_post(&payload)
+						_state.storage.put_post(&payload)
 					})
 					.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
 					.map_err(|e| e.into()),
@@ -78,8 +77,8 @@ pub fn update_post(
 }
 
 pub fn accept_post(req: &Request) -> AsyncResponse {
-	let _req = req.clone();
-	let _req2 = req.clone();
+	let _state = req.state().clone();
+	let _state2 = _state.clone();
 
 	let id = Path::<(i64,)>::extract(req);
 	let id = match id {
@@ -91,14 +90,14 @@ pub fn accept_post(req: &Request) -> AsyncResponse {
 	.storage
 	.accept_post(id.0)
 	.and_then(move |_| {
-		_req.state().storage.fetch_posts(vec![id.0.to_string()])
+		_state.storage.fetch_posts(vec![id.0.to_string()])
 	})
 	.and_then(move |posts| {
 		if posts.len() != 1 {
 			return Either::A(future::err(StorageError::Racing));
 		}
 
-		Either::B(_req2.state().storage.apply_index(&posts[0]))
+		Either::B(_state2.storage.apply_index(&posts[0]))
 	})
 	.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
 	.map_err(|e| e.into())
@@ -106,8 +105,8 @@ pub fn accept_post(req: &Request) -> AsyncResponse {
 }
 
 pub fn delete_post(req: &Request) -> AsyncResponse {
-	let _req = req.clone();
-	let _req2 = req.clone();
+	let _state = req.state().clone();
+	let _state2 = req.state().clone();
 
 	let id = Path::<(i64,)>::extract(req);
 	let id = match id {
@@ -123,10 +122,10 @@ pub fn delete_post(req: &Request) -> AsyncResponse {
 			return Either::A(future::err(StorageError::Racing));
 		}
 
-		Either::B(_req.state().storage.remove_index(&posts[0]))
+		Either::B(_state.storage.remove_index(&posts[0]))
 	})
 	.and_then(move |_| {
-		_req2.state().storage.delete_post(id.0)
+		_state2.storage.delete_post(id.0)
 	})
 	.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
 	.map_err(|e| e.into())

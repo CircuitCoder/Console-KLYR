@@ -3,11 +3,12 @@ use futures::prelude::*;
 use storage::{Storage, StorageError};
 
 pub mod post;
+pub mod chrono;
 
 type Request = HttpRequest<State>;
 type AsyncResponse = Box<Future<Item = HttpResponse, Error = Error>>;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct State {
 	storage: Storage,
 }

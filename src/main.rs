@@ -29,16 +29,26 @@ fn get_index(_: &HttpRequest<State>) -> Result<NamedFile> {
 
 fn build_app() -> App<State> {
 	App::with_state(Default::default())
-		.resource("/api/posts", |r| {
-			r.method(Method::GET).f(handler::post::list_posts);
-			r.method(Method::POST).f(handler::post::new_post)
-		})
-		.resource("/api/posts/{id}", |r| {
-			r.method(Method::PUT).with(handler::post::update_post);
-			r.method(Method::DELETE).f(handler::post::delete_post)
-		})
-		.resource("/api/posts/{id}/accept", |r| {
-			r.method(Method::PUT).f(handler::post::accept_post)
+		.scope("/api", |scope| {
+			scope
+				.nested("/posts", |scope| {
+					scope
+						.resource("", |r| {
+							r.method(Method::GET).f(handler::post::list_posts);
+							r.method(Method::POST).f(handler::post::new_post)
+						})
+						.resource("/{id}", |r| {
+							r.method(Method::PUT).with(handler::post::update_post);
+							r.method(Method::DELETE).f(handler::post::delete_post)
+						})
+						.resource("/{id}/accept", |r| {
+							r.method(Method::PUT).f(handler::post::accept_post)
+						})
+				})
+				.resource("/chrono", |r| {
+					r.method(Method::GET).f(handler::chrono::get_chrono);
+					r.method(Method::PUT).f(handler::chrono::update_chrono)
+				})
 		})
 		.handler("/static", fs::StaticFiles::new("./static-dist").unwrap())
 		.default_resource(|r| r.method(Method::GET).f(get_index))

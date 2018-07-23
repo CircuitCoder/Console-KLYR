@@ -22,13 +22,13 @@ pub enum StorageError {
 impl fmt::Display for StorageError {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		use storage::StorageError::*;
-		match self {
-			&Mailbox(_) => write!(f, "StorageError: Mailbox"),
-			&Redis(_) => write!(f, "StorageError: Redis"),
-			&Format => write!(f, "StorageError: Format"),
-			&InvalidArgument => write!(f, "StorageError: InvalidArgument"),
-			&DivergedState => write!(f, "StorageError: DivergedState"),
-			&Racing => write!(f, "StorageError: Racing"),
+		match *self {
+			Mailbox(_) => write!(f, "StorageError: Mailbox"),
+			Redis(_) => write!(f, "StorageError: Redis"),
+			Format => write!(f, "StorageError: Format"),
+			InvalidArgument => write!(f, "StorageError: InvalidArgument"),
+			DivergedState => write!(f, "StorageError: DivergedState"),
+			Racing => write!(f, "StorageError: Racing"),
 		}
 	}
 }
@@ -45,6 +45,19 @@ impl From<actix_redis::Error> for StorageError {
 	}
 }
 
+fn non_err(
+	input: Result<RespValue, actix_redis::Error>,
+) -> impl Future<Item = (), Error = StorageError> {
+	match input {
+		Ok(v) => match v {
+			RespValue::Error(_) => future::err(StorageError::Format),
+			_ => future::ok(()),
+		},
+		Err(e) => future::err(StorageError::Redis(e)),
+	}
+}
+
+#[derive(Clone)]
 pub struct Storage {
 	db: Addr<RedisActor>,
 }
@@ -55,11 +68,12 @@ impl Storage {
 	}
 
 	pub fn setup(&self) -> impl Future<Item = (), Error = StorageError> {
-		let demo = Post::demo();
-		info!("Inserting demo post...");
-		let fut = self.put_post(&demo);
-		fut
+		self.put_post(&Post::demo())
+		.join(self.set_chrono_spec(Default::default()))
+		.map(|_| ())
 	}
+
+	/* Posts */
 
 	pub fn filter_posts(
 		&self,
@@ -106,7 +120,7 @@ impl Storage {
 	) -> impl Future<Item = Vec<Post>, Error = StorageError> {
 		// Currently we ignore malformat contents
 
-		if posts.len() == 0 {
+		if posts.is_empty() {
 			return future::Either::A(future::ok(vec![]));
 		}
 
@@ -155,20 +169,20 @@ impl Storage {
 		future::Either::B(unwrapped)
 	}
 
-	pub fn put_post(&self, p: &Post) -> Box<dyn Future<Item = (), Error = StorageError>> {
+	pub fn put_post(&self, p: &Post) -> impl Future<Item = (), Error = StorageError> {
 		// This is for update
 
 		let id = match p.id {
 			Some(id) => format!("post:pending:{}", id),
-			None => return Box::new(future::err(StorageError::InvalidArgument)),
+			None => return Either::A(future::err(StorageError::InvalidArgument)),
 		};
 
 		let formatted = match serde_json::to_vec(p) {
 			Ok(f) => f,
-			Err(_) => return Box::new(future::err(StorageError::Format)),
+			Err(_) => return Either::A(future::err(StorageError::Format)),
 		};
 
-		Box::new(
+		Either::B(
 			self
 				.db
 				.send(Command(RespValue::Array(vec![
@@ -212,7 +226,7 @@ impl Storage {
 			None => return Either::A(future::err(StorageError::InvalidArgument)),
 		};
 		let mut command = format!("redis.call('ZADD', 'post:tag:', '{}', {})\n", id, id);
-		for e in p.tags.iter() {
+		for e in &p.tags {
 			command += &format!("redis.call('ZADD', 'post:tag:{}', '{}', {})\n", e, id, id);
 		}
 		Either::B(
@@ -271,7 +285,7 @@ impl Storage {
 			None => return Either::A(future::err(StorageError::InvalidArgument)),
 		};
 		let mut command = format!("redis.call('ZREM', 'post:tag:', '{}')\n", id);
-		for e in p.tags.iter() {
+		for e in &p.tags {
 			command += &format!("redis.call('ZREM', 'post:tag:{}', '{}')\n", e, id);
 		}
 		Either::B(
@@ -316,6 +330,54 @@ impl Storage {
 					_ => future::err(StorageError::Format),
 				}
 			})
+	}
+
+	/* Chronometer */
+	pub fn get_chrono_spec(&self) -> impl Future<Item = ChronoSpec, Error = StorageError> {
+		self
+			.db
+			.send(Command(RespValue::Array(vec![
+				"GET".into(),
+				"chrono:spec".to_owned().into_bytes().into(),
+			])))
+			.from_err()
+			.and_then(|v| {
+				let v = match v {
+					Ok(v) => v,
+					Err(e) => return future::err(StorageError::Redis(e)),
+				};
+
+				let v = match v {
+					RespValue::Nil => return future::err(StorageError::DivergedState),
+					RespValue::SimpleString(s) => serde_json::from_str(&s),
+					RespValue::BulkString(s) => serde_json::from_slice(&s),
+					_ => return future::err(StorageError::Format),
+				};
+
+				match v {
+					Ok(v) => future::ok(v),
+					Err(_) => future::err(StorageError::Format),
+				}
+			})
+	}
+
+	pub fn set_chrono_spec(&self, spec: ChronoSpec) -> impl Future<Item = (), Error = StorageError> {
+		let converted = match serde_json::to_vec(&spec) {
+			Ok(v) => v,
+			Err(_) => return future::Either::A(future::err(StorageError::Format)),
+		};
+
+		future::Either::B(
+			self
+				.db
+				.send(Command(RespValue::Array(vec![
+					"SET".into(),
+					"chrono:spec".to_owned().into_bytes().into(),
+					converted.into(),
+				])))
+				.from_err()
+				.and_then(non_err),
+		)
 	}
 }
 

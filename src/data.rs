@@ -71,9 +71,55 @@ pub enum Message {
 	ReviewRejected { id: u64 },
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct Chronometer {
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub struct ChronoSpec {
 	anchor: u64,
 	real: u64,
 	ratio: f64,
+}
+
+impl ChronoSpec {
+	fn calc_virt(&self, cur_real: u64) -> u64 {
+		let diff = cur_real - self.real;
+		self.anchor + (diff as f64 * self.ratio).floor() as u64
+	}
+
+	pub fn now(&self) -> u64 {
+		// Rounded towards zero
+
+		let cur_real = SystemTime::now()
+			.duration_since(SystemTime::UNIX_EPOCH)
+			.unwrap()
+			.as_secs();
+		self.calc_virt(cur_real)
+	}
+
+	pub fn derive(&self, ratio: f64) -> ChronoSpec {
+		let real = SystemTime::now()
+			.duration_since(SystemTime::UNIX_EPOCH)
+			.unwrap()
+			.as_secs();
+		let anchor = self.calc_virt(real);
+
+		ChronoSpec {
+			real,
+			anchor,
+			ratio,
+		}
+	}
+}
+
+impl Default for ChronoSpec {
+	fn default() -> ChronoSpec {
+		ChronoSpec {
+			real: 0, // Epoch
+			anchor: 0,
+			ratio: 1_f64,
+		}
+	}
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub struct ChronoUpdate {
+	pub(crate) ratio: f64,
 }
