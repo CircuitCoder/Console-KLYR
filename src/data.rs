@@ -41,21 +41,15 @@ impl Post {
 pub struct User {
 	id: Option<String>,
 	name: String,
-
-	is_admin: bool,
-	is_coordinator: bool,
-	is_resolver: bool,
-	is_author: bool,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Step {
-	id: Option<i64>,
-	parent: Option<i64>,
+	pub(crate) id: Option<i64>,
+	pub(crate) parent: Option<i64>,
 
 	title: String,
 	content: String,
-	resolvers: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -65,10 +59,37 @@ pub struct Comment {
 }
 
 #[derive(Serialize, Deserialize)]
-pub enum Message {
+pub enum MessageContent {
 	WaitingReview { id: u64 },
 	ReviewPassed { id: u64 },
-	ReviewRejected { id: u64 },
+	ReviewRejected { id: u64, comment: String },
+}
+
+// TODO: create message
+
+#[derive(Serialize, Deserialize)]
+pub enum Rcpt {
+	Group(String),
+	User(String),
+}
+
+impl Rcpt {
+	pub fn mailbox(&self) -> String {
+		use self::Rcpt::*;
+		match *self {
+			Group(ref g) => format!("mailbox:group:{}", g),
+			User(ref u) => format!("mailbox:user:{}", u),
+		}
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Message {
+  pub(crate) id: String, // A random string
+	pub(crate) content: MessageContent,
+	pub(crate) time: u64,
+	pub(crate) rcpt: Rcpt,
+	// TODO: do we need realtime?
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy)]

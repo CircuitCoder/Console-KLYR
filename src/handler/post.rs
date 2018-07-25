@@ -97,15 +97,9 @@ pub fn accept_post(req: &Request) -> AsyncResponse {
 	req
 		.state()
 		.storage
-		.accept_post(id.0)
-		.and_then(move |_| _state.storage.fetch_posts(vec![id.0.to_string()]))
-		.and_then(move |posts| {
-			if posts.len() != 1 {
-				return Either::A(future::err(StorageError::Racing));
-			}
-
-			Either::B(_state2.storage.apply_index(&posts[0]))
-		})
+		.get_chrono_spec()
+		.and_then(move |spec| _state.storage.accept_post(id.0, spec.now()))
+		.and_then(move |post| _state2.storage.apply_index(&post))
 		.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
 		.map_err(|e| e.into())
 		.responder()
