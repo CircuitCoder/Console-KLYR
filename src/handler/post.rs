@@ -188,3 +188,39 @@ pub fn digest_post(req: &Request) -> AsyncResponse {
 		digest_amplifier(req.state().storage.fetch_posts(vec![id.0.to_string()]))
 	}
 }
+
+pub fn fetch_post(req: &Request) -> AsyncResponse {
+	let pending = req.query().get("pending").is_some();
+	let id = Path::<(i64,)>::extract(req);
+
+	let id = match id {
+		Ok(v) => v,
+		Err(_) => return future::err(error::ErrorNotFound("Not Found")).responder(),
+	};
+
+	if pending {
+		req.state()
+			.storage
+			.fetch_pending_posts(vec![id.0.to_string()])
+			.map_err(|e| e.into())
+			.and_then(|mut e| {
+				if e.len() != 1 {
+					return future::err(error::ErrorNotFound("Not Found"));
+				}
+				future::ok(HttpResponse::Ok().json(e.pop().unwrap()))
+			})
+			.responder()
+	} else {
+		req.state()
+			.storage
+			.fetch_posts(vec![id.0.to_string()])
+			.map_err(|e| e.into())
+			.and_then(|mut e| {
+				if e.len() != 1 {
+					return future::err(error::ErrorNotFound("Not Found"));
+				}
+				future::ok(HttpResponse::Ok().json(e.pop().unwrap()))
+			})
+			.responder()
+	}
+}

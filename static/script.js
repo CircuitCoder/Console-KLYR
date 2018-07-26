@@ -2,8 +2,10 @@ import Home from './routes/Home';
 import NewPost from './routes/NewPost';
 import Inbox from './routes/Inbox';
 import Chronometer from './routes/Chronometer';
+import Post from './routes/Post';
 
 import EmbDigest from './components/EmbDigest';
+import PostInner from './components/PostInner';
 
 import { request } from './util';
 
@@ -14,6 +16,7 @@ const routes = [
   { name: 'NewPost', path: '/posts/new', component: NewPost },
   { name: 'Inbox', path: '/inbox', component: Inbox },
   { name: 'Chronometer', path: '/chronometer', component: Chronometer },
+  { name: 'Post', path: '/posts/:id', component: Post },
 ];
 
 /* global VueRouter */
@@ -41,6 +44,7 @@ const desc = {
 
   components: {
     EmbDigest,
+    PostInner,
   },
 
   methods: {

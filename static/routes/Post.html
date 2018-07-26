@@ -1,0 +1,14 @@
+<main :class="{ middle: content === null, narrow: content !== null }">
+  <div v-if="content === null && !failed" class="backboard">
+    <mdc-icon icon="cloud_download"></mdc-icon>
+    <div class="hint">Loading...</div>
+  </div>
+  <div v-if="content === null && failed" class="backboard">
+    <mdc-icon icon="tab_unselected"></mdc-icon>
+    <div class="hint">It's gone!</div>
+  </div>
+  <div v-if="content !== null">
+    <mdc-display>{{ content.title }}</mdc-display>
+    <post-inner :html="compiled"></post-inner>
+  </div>
+</main>
