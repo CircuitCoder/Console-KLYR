@@ -172,6 +172,14 @@ pub struct ChronoUpdate {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct PostRejection {
-	pub(crate) id: u64,
 	pub(crate) comment: String,
+}
+
+impl PostRejection {
+	pub fn into_msg(self, id: i64) -> MessageContent {
+		let PostRejection{ comment } = self;
+		MessageContent::ReviewRejected{
+			id, comment,
+		}
+	}
 }

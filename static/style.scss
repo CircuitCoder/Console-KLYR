@@ -35,6 +35,18 @@ main {
   }
 }
 
+.left-slided {
+  max-width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  
+  > div {
+    width: 100%;
+  }
+}
+
 .expand-width {
   width: 100%;
   .mdc-textfield {
@@ -81,3 +93,4 @@ main {
 }
 
 @import 'styles/chronometer';
+@import 'styles/inbox'

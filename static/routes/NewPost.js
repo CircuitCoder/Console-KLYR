@@ -11,14 +11,27 @@ export default Vue.component('NewPost', {
     mde: null,
   }),
 
-  mounted() {
+  async mounted() {
     /* global SimpleMDE */
     this.mde = new SimpleMDE({ element: this.$refs.content });
+
+    if(this.$route.name === 'EditPost') {
+      const post = await request(`/api/posts/${this.$route.params.id}?pending`);
+      this.mde.value(post.content);
+      this.title = post.title;
+      [this.category] = post.tags;
+    }
   },
 
   methods: {
     async submit() {
-      const resp = await request('/api/posts', 'POST', {
+      let url = '/api/posts';
+      let method = 'POST';
+      if(this.$route.name === 'EditPost') {
+        url = `/api/posts/${this.$route.params.id}`;
+        method = 'PUT';
+      }
+      const resp = await request(url, method, {
         title: this.title,
         author: 'root',
         content: this.mde.value(),

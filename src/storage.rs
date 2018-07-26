@@ -182,6 +182,7 @@ impl Storage {
 					"SET".into(),
 					id.into(),
 					formatted.into(),
+					"XX".into(),
 				])))
 				.from_err()
 				.map(|_| ()),
@@ -197,7 +198,7 @@ impl Storage {
 		let target = format!("post:content:{}", id);
 
 		let atomic_get_del = format!(
-			"s = redis.call('GET', '{}')\nredis.call('DEL', '{}')\nreturn s",
+			"local s\ns = redis.call('GET', '{}')\nredis.call('DEL', '{}')\nreturn s",
 			original, original
 		);
 		let _self = self.clone();
@@ -216,7 +217,8 @@ impl Storage {
 				};
 
 				let content = match inner {
-					RespValue::Error(_) => {
+					RespValue::Error(e) => {
+						debug!("{}", e);
 						return Either::A(future::err(StorageError::DivergedState))
 					}
 					RespValue::SimpleString(s) => serde_json::from_str(&s),

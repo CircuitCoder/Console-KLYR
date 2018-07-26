@@ -22,7 +22,7 @@ pub fn digest_markdown(s: &str, maxlen: usize) -> String {
 
 		if result.len() >= maxlen {
 			result.split_off(maxlen);
-			return result;
+			return format!("{}...", result);
 		};
 	};
 

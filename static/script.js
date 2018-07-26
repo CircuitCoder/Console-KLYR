@@ -17,6 +17,7 @@ const routes = [
   { name: 'Inbox', path: '/inbox', component: Inbox },
   { name: 'Chronometer', path: '/chronometer', component: Chronometer },
   { name: 'Post', path: '/posts/:id', component: Post },
+  { name: 'EditPost', path: '/posts/:id/edit', component: NewPost },
 ];
 
 /* global VueRouter */
@@ -51,6 +52,7 @@ const desc = {
     async updateMsg(/* muted = false */) {
       // TODO: implement notification
       this.msgs = await request('/api/msg');
+      this.msgs.sort((a, b) => b.time - a.time);
     },
 
     async updateChrono() {

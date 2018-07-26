@@ -1,7 +1,7 @@
 .emb-digest {
   border-radius: 4px;
   border: rgba(0,0,0,.12) 1px solid;
-  padding: 0 20px;
+  padding: 0 20px 4px 20px;
   overflow: hidden;
 
   @include mdc-ripple-surface;
@@ -9,4 +9,18 @@
   @include mdc-states;
 
   cursor: pointer;
+}
+
+.emb-hint {
+  color: rgba(0,0,0,.38);
+}
+
+.emb-digest {
+  .mdc-title {
+    margin-bottom: 8px;
+  }
+
+  .mdc-body {
+    margin-top: 8px;
+  }
 }

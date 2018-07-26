@@ -1,6 +1,7 @@
 <main>
   <mdc-card class="card-demo">
-    <mdc-card-header>Submit News</mdc-card-header>
+    <mdc-card-header v-if="$route.name === 'NewPost'">Submit News</mdc-card-header>
+    <mdc-card-header v-if="$route.name === 'EditPost'">Edit News #{{ $route.params.id }}</mdc-card-header>
     <mdc-card-text>
       <mdc-layout-grid>
         <mdc-layout-cell desktop="6" phone="12" align="bottom">

@@ -8,6 +8,8 @@ export default Vue.component('Post', {
     content: null,
     compiled: '',
     failed: false,
+    rejection: false,
+    notes: '',
   }),
 
   created() {
@@ -20,7 +22,7 @@ export default Vue.component('Post', {
       this.failed = false;
 
       let url = `/api/posts/${this.$route.params.id}`;
-      if('pending' in this.$route.query) url += '?pending';
+      if(this.$route.query.pending) url += '?pending';
 
       try {
         this.content = await request(url);
@@ -39,11 +41,56 @@ export default Vue.component('Post', {
         this.failed = true;
       }
     },
+
+    async accept() {
+      const url = `/api/posts/${this.content.id}/accept`;
+      const resp = await request(url, 'PUT', {});
+
+      if(resp.ok) {
+        this.$root.$emit('show-snackbar', {
+          message: 'Done. You may backlog the message now.',
+        });
+      } else {
+        this.$root.$emit('show-snackbar', {
+          message: 'Failed',
+        });
+      }
+    },
+
+    reject() {
+      this.rejection = true;
+    },
+
+    async sendReject() {
+      const url = `/api/posts/${this.$route.params.id}/reject`;
+      const resp = await request(url, 'PUT', { comment: this.notes });
+      if(resp.ok) {
+        this.$root.$emit('show-snackbar', {
+          message: 'Done. You may backlog the message now.',
+        });
+      } else {
+        this.$root.$emit('show-snackbar', {
+          message: 'Failed',
+        });
+      }
+    },
   },
 
   watch: {
     $route() {
       this.grab();
+    },
+  },
+
+  computed: {
+    canEdit() {
+      // TODO: user privilege
+      return this.content !== null && this.$route.query.pending;
+    },
+
+    canManage() {
+      // TODO: user privilege
+      return this.content !== null && this.$route.query.pending;
     },
   },
 });

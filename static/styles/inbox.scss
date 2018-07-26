@@ -1,0 +1,23 @@
+.group-ind {
+  font-size: 14px;
+  color: rgba(0,0,0,.54);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  align-self: center;
+
+  .mdc-icon:last-child {
+    font-size: 18px;
+  }
+}
+
+.inbox-card .mdc-card-header {
+  display: flex;
+  align-items: center;
+}
+
+.dimmed {
+  color: rgba(0,0,0,.54);
+}

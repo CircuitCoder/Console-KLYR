@@ -1,14 +1,43 @@
 <main :class="{ narrow: msgs.length > 0, middle: msgs.length === 0 }">
-  <mdc-card v-for="m of msgs" class="card-gap">
-    <mdc-card-header v-if="'WaitingReview' in m.content">New Pending Review</mdc-card-header>
-    <mdc-card-header v-if="'ReviewPassed' in m.content">News Piece Accepted</mdc-card-header>
-    <mdc-card-header v-if="'ReviewRejected' in m.content">News Piece Rejected</mdc-card-header>
+  <mdc-card v-for="m of msgs" class="card-gap inbox-card" :key="m.id">
+    <mdc-card-header>
+      <span v-if="'WaitingReview' in m.content">New Pending Review</span>
+      <span v-if="'ReviewPassed' in m.content">Accepted</span>
+      <span v-if="'ReviewRejected' in m.content">Rejected</span>
+
+      <span v-if="'Group' in m.rcpt" class="group-ind">
+        <mdc-icon icon="arrow_right"></mdc-icon>
+        {{ m.rcpt.Group }}
+        <mdc-icon icon="group"></mdc-icon>
+      </span>
+    </mdc-card-header>
     <mdc-card-text>
-      <emb-digest v-if="'WaitingReview' in m.content" type="post" :id="m.content.WaitingReview.id" :pending="true"></emb-digest>
-      <emb-digest v-if="'ReviewPassed' in m.content" type="post" :id="m.content.ReviewPassed.id" :pending="true"></emb-digest>
+      <emb-digest
+        @click.native="toPost(m)"
+        v-if="'WaitingReview' in m.content"
+        type="post"
+        :id="m.content.WaitingReview.id"
+        :pending="true"></emb-digest>
+
+      <emb-digest
+        @click.native="toPost(m)"
+        v-if="'ReviewPassed' in m.content"
+        type="post"
+        :id="m.content.ReviewPassed.id"
+        :pending="false"></emb-digest>
+
+      <mdc-body v-if="'ReviewRejected' in m.content">
+        <mdc-icon icon="format_quote" class="dimmed"></mdc-icon>{{ m.content.ReviewRejected.comment }}
+      </mdc-body>
+      <emb-digest
+        @click.native="toPost(m)"
+        v-if="'ReviewRejected' in m.content"
+        type="post"
+        :id="m.content.ReviewRejected.id"
+        :pending="true"></emb-digest>
     </mdc-card-text>
     <mdc-card-actions>
-      <mdc-card-action-button @click="done(m)">Move to Backlog</mdc-card-action-button>
+      <mdc-card-action-button @click="done(m)"><i class="material-icons mdc-button__icon">archive</i>Move to Backlog</mdc-card-action-button>
     </mdc-card-actions>
   </mdc-card>
   <div class="backboard" v-if="msgs.length === 0">

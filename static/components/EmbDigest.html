@@ -1,9 +1,10 @@
-<mdc-ripple tag="div" class="emb-digest" :classes="['emb-digest']">
+<mdc-ripple tag="div" class="emb-digest">
   <div class="emb-hint" v-if="content === null && !failed">
     Loading...
   </div>
-  <div class="emb-body" v-if="content === null && failed">
-    Loading failed. Perhaps the entry has been reviewed or deleted?
+  <div class="emb-hint" v-if="content === null && failed">
+    <mdc-title>{{ pending ? 'Draft' : 'Post' }} #{{id}} <mdc-caption>is gone.</mdc-caption></mdc-title>
+    <mdc-body>Perhaps the entry has been reviewed or deleted?</mdc-body>
   </div>
   <div class="emb-body" v-if="content !== null && type === 'post'">
     <mdc-title>{{ content.title }} <mdc-caption>#{{id}}</mdc-caption></mdc-title>

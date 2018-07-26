@@ -35,7 +35,7 @@ export default Vue.component('Chronometer', {
           message: 'Failed',
         });
       }
-    }
+    },
   },
 
   computed: {
@@ -53,7 +53,6 @@ export default Vue.component('Chronometer', {
     },
 
     validRatio() {
-      console.log(this.ratio);
       if(!this.ratio) return true;
       if(typeof this.ratio === 'number') return true;
       return this.ratio.match(/^((\d+)|(\d*\.\d+))$/) !== null;

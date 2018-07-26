@@ -1,14 +1,31 @@
 <main :class="{ middle: content === null, narrow: content !== null }">
-  <div v-if="content === null && !failed" class="backboard">
-    <mdc-icon icon="cloud_download"></mdc-icon>
-    <div class="hint">Loading...</div>
+  <div :class="{ 'left-slided': content === null }">
+    <div>
+      <mdc-button dense @click="$router.back()"><i class="material-icons mdc-button__icon">arrow_back</i>Back</mdc-button>
+      <mdc-button dense @click="edit()" v-if="canEdit"><i class="material-icons mdc-button__icon">edit</i>Edit</mdc-button>
+      <mdc-button dense @click="accept()" v-if="canManage"><i class="material-icons mdc-button__icon">done</i>Accept</mdc-button>
+      <mdc-button dense @click="reject()" v-if="canManage"><i class="material-icons mdc-button__icon">close</i>Reject</mdc-button>
+    </div>
+    <div v-if="content === null && !failed" class="backboard">
+      <mdc-icon icon="cloud_download"></mdc-icon>
+      <div class="hint">Loading...</div>
+    </div>
+    <div v-if="content === null && failed" class="backboard">
+      <mdc-icon icon="tab_unselected"></mdc-icon>
+      <div class="hint">It's gone!</div>
+    </div>
+    <div v-if="content !== null">
+      <mdc-display>{{ content.title }}</mdc-display>
+      <post-inner :html="compiled"></post-inner>
+    </div>
   </div>
-  <div v-if="content === null && failed" class="backboard">
-    <mdc-icon icon="tab_unselected"></mdc-icon>
-    <div class="hint">It's gone!</div>
-  </div>
-  <div v-if="content !== null">
-    <mdc-display>{{ content.title }}</mdc-display>
-    <post-inner :html="compiled"></post-inner>
-  </div>
+
+  <mdc-dialog v-model="rejection"
+    title="Send Rejection" accept="Send" cancel="Cancel"
+    @accept="sendReject()" @cancel="rejection = false">
+    This will send a notice to author's inbox, and leave the draft in pending state.
+    Future editions will result in new messages in your inbox.
+
+    <mdc-textfield multiline label="Rejection Notes" class="expand-width" v-model="notes"></mdc-textfield>
+  </mdc-dialog>
 </main>

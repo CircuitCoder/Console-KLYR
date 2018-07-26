@@ -64,6 +64,9 @@ fn build_app() -> App<State> {
 						.resource("/{id}/accept", |r| {
 							r.method(Method::PUT).f(handler::post::accept_post)
 						})
+						.resource("/{id}/reject", |r| {
+							r.method(Method::PUT).with(handler::post::reject_post)
+						})
 						.resource("/{id}/digest", |r| {
 							r.method(Method::GET).f(handler::post::digest_post)
 						})

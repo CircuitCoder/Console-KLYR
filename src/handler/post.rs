@@ -86,8 +86,18 @@ pub fn update_post(
 		.storage
 		.get_chrono_spec()
 		.and_then(move |chrono| {
-			payload.time = chrono.now();
-			state.storage.put_post(&payload)
+			let time = chrono.now();
+			payload.time = time;
+			state.storage.put_post(&payload).map(move |_| (state, time))
+		})
+		.and_then(move |(state, time)| {
+			let msg = Message::new(
+				MessageContent::WaitingReview{ id: path.0 },
+				time,
+				Rcpt::Group("reviewers".to_owned())
+			);
+
+			state.storage.send_msg(msg)
 		})
 		.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
 		.map_err(|e| e.into())
@@ -126,6 +136,28 @@ pub fn accept_post(req: &Request) -> AsyncResponse {
 		.responder()
 }
 
+pub fn reject_post(
+	(id, state, payload): (Path<(i64,)>, State<::handler::State>, Json<PostRejection>),
+) -> AsyncResponse {
+	state.storage.fetch_pending_posts(vec![id.0.to_string()])
+	.join(state.storage.get_chrono_spec())
+	.map_err(|e| e.into())
+	.and_then(move |(mut e, chrono)| {
+		if e.len() != 1 {
+			return Either::A(future::err(error::ErrorNotFound("Not Found")));
+		}
+		let post = e.pop().unwrap();
+		let msg = Message::new(
+			payload.0.into_msg(id.0),
+			chrono.now(),
+			Rcpt::User(post.author),
+		);
+		Either::B(state.storage.send_msg(msg).map_err(|e| e.into()))
+	})
+	.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
+	.responder()
+}
+
 pub fn delete_post(req: &Request) -> AsyncResponse {
 	let _state = req.state().clone();
 	let _state2 = req.state().clone();
@@ -154,16 +186,16 @@ pub fn delete_post(req: &Request) -> AsyncResponse {
 
 fn digest_amplifier<T>(fut: T) -> AsyncResponse
 where
-	T: Future<Item = Vec<Post>, Error = StorageError> + 'static,
+	T: Future<Item = (Vec<Post>, usize), Error = StorageError> + 'static,
 {
 	fut.map_err(|e| e.into())
-		.and_then(|mut posts| {
+		.and_then(|(mut posts, maxlen)| {
 			if posts.len() != 1 {
 				return future::err(error::ErrorNotFound("Not Found"));
 			};
 
 			let mut post = posts.pop().unwrap();
-			post.content = util::digest_markdown(&post.content, 40);
+			post.content = util::digest_markdown(&post.content, maxlen);
 			future::ok(HttpResponse::Ok().json(post))
 		})
 		.responder()
@@ -171,6 +203,10 @@ where
 
 pub fn digest_post(req: &Request) -> AsyncResponse {
 	let pending = req.query().get("pending").is_some();
+	let mut maxlen = req.query().get("pending")
+	  .and_then(|ml| ml.parse::<usize>().ok()).unwrap_or(40);
+	
+	if maxlen > 100 { maxlen = 100 };
 	let id = Path::<(i64,)>::extract(req);
 
 	let id = match id {
@@ -182,10 +218,13 @@ pub fn digest_post(req: &Request) -> AsyncResponse {
 		digest_amplifier(
 			req.state()
 				.storage
-				.fetch_pending_posts(vec![id.0.to_string()]),
+				.fetch_pending_posts(vec![id.0.to_string()])
+				.map(move |e| (e, maxlen))
 		)
 	} else {
-		digest_amplifier(req.state().storage.fetch_posts(vec![id.0.to_string()]))
+		digest_amplifier(req.state().storage.fetch_posts(vec![id.0.to_string()])
+				.map(move |e| (e, maxlen))
+		)
 	}
 }
 
