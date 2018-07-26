@@ -1,3 +1,5 @@
+use rand::distributions::Alphanumeric;
+use rand::{self, Rng};
 use std::time::SystemTime;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -58,16 +60,16 @@ pub struct Comment {
 	author: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum MessageContent {
-	WaitingReview { id: u64 },
-	ReviewPassed { id: u64 },
-	ReviewRejected { id: u64, comment: String },
+	WaitingReview { id: i64 },
+	ReviewPassed { id: i64 },
+	ReviewRejected { id: i64, comment: String },
 }
 
 // TODO: create message
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Rcpt {
 	Group(String),
 	User(String),
@@ -81,15 +83,38 @@ impl Rcpt {
 			User(ref u) => format!("mailbox:user:{}", u),
 		}
 	}
+
+	pub fn backlog(&self) -> String {
+		use self::Rcpt::*;
+		match *self {
+			Group(ref g) => format!("backlog:group:{}", g),
+			User(ref u) => format!("backlog:user:{}", u),
+		}
+	}
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Message {
-  pub(crate) id: String, // A random string
+	pub(crate) id: String, // A random string
 	pub(crate) content: MessageContent,
 	pub(crate) time: u64,
 	pub(crate) rcpt: Rcpt,
 	// TODO: do we need realtime?
+}
+
+impl Message {
+	pub fn new(content: MessageContent, time: u64, rcpt: Rcpt) -> Message {
+		let id = rand::thread_rng()
+			.sample_iter(&Alphanumeric)
+			.take(16)
+			.collect::<String>();
+		Message {
+			id,
+			content,
+			time,
+			rcpt,
+		}
+	}
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
@@ -143,4 +168,10 @@ impl Default for ChronoSpec {
 #[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct ChronoUpdate {
 	pub(crate) ratio: f64,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct PostRejection {
+	pub(crate) id: u64,
+	pub(crate) comment: String,
 }

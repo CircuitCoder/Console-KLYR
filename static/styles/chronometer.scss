@@ -1,0 +1,38 @@
+.chrono-timer {
+  padding: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-direction: column;
+}
+
+.chrono-day {
+  font-size: 24px;
+  color: rgba(0,0,0,.54);
+}
+
+.chrono-time {
+  color: rgba(0,0,0,.38);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chrono-seg {
+  width: 80px;
+  text-align: center;
+  font-size: 48px;
+  line-height: 60px;
+  color: black;
+}
+
+.chrono-ratio {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  
+  > div:last-child {
+    margin-left: 10px;
+  }
+}

@@ -17,7 +17,7 @@ export default Vue.component('NewPost', {
         author: 'root',
         content: this.content,
         tags: [this.category],
-        deleted: false,
+        time: 0, // This is ignored
       });
 
       if(resp.ok) {

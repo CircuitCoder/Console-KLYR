@@ -28,9 +28,9 @@ pub fn list_posts(req: &Request) -> AsyncResponse {
 
 pub fn new_post(req: &Request) -> AsyncResponse {
 	let _state = req.state().clone();
+	let _state2 = req.state().clone();
 
-	req
-		.json()
+	req.json()
 		.from_err()
 		.join(req.state().storage.get_chrono_spec().map_err(|e| {
 			let error: actix_web::Error = e.into();
@@ -52,12 +52,23 @@ pub fn new_post(req: &Request) -> AsyncResponse {
 					.fetch_next_post_id()
 					.and_then(move |id| {
 						payload.set_id(id);
-						_state.storage.put_post(&payload)
+						_state
+							.storage
+							.put_post(&payload)
+							.map(move |_| (id, payload.time))
 					})
-					.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
 					.map_err(|e| e.into()),
 			)
 		})
+		.and_then(move |(id, time)| {
+			let msg = Message::new(
+				MessageContent::WaitingReview { id },
+				time,
+				Rcpt::Group("reviewers".to_owned()),
+			);
+			_state2.storage.send_msg(msg).map_err(|e| e.into())
+		})
+		.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
 		.responder()
 }
 
@@ -87,6 +98,7 @@ pub fn update_post(
 pub fn accept_post(req: &Request) -> AsyncResponse {
 	let _state = req.state().clone();
 	let _state2 = _state.clone();
+	let _state3 = _state.clone();
 
 	let id = Path::<(i64,)>::extract(req);
 	let id = match id {
@@ -94,12 +106,20 @@ pub fn accept_post(req: &Request) -> AsyncResponse {
 		Err(_) => return future::err(error::ErrorNotFound("Invalid id field")).responder(),
 	};
 
-	req
-		.state()
+	req.state()
 		.storage
 		.get_chrono_spec()
 		.and_then(move |spec| _state.storage.accept_post(id.0, spec.now()))
-		.and_then(move |post| _state2.storage.apply_index(&post))
+		.and_then(move |post| _state2.storage.apply_index(&post).map(move |_| post))
+		.join(_state3.storage.get_chrono_spec())
+		.and_then(move |(post, chrono)| {
+			let msg = Message::new(
+				MessageContent::ReviewPassed{ id: post.id.unwrap() },
+				chrono.now(),
+				Rcpt::User(post.author)
+			);
+			_state3.storage.send_msg(msg)
+		})
 		.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
 		.map_err(|e| e.into())
 		.responder()
@@ -115,8 +135,7 @@ pub fn delete_post(req: &Request) -> AsyncResponse {
 		Err(_) => return future::err(error::ErrorNotFound("Invalid id field")).responder(),
 	};
 
-	req
-		.state()
+	req.state()
 		.storage
 		.fetch_posts(vec![id.0.to_string()])
 		.and_then(move |posts| {

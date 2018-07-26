@@ -1,0 +1,17 @@
+<main :class="{ narrow: msgs.length > 0, middle: msgs.length === 0 }">
+  <mdc-card v-for="m of msgs" class="card-gap">
+    <mdc-card-header v-if="'WaitingReview' in m.content">New Pending Review</mdc-card-header>
+    <mdc-card-header v-if="'ReviewPassed' in m.content">News Piece Accepted</mdc-card-header>
+    <mdc-card-header v-if="'ReviewRejected' in m.content">News Piece Rejected</mdc-card-header>
+    <mdc-card-text>
+      TODO: card
+    </mdc-card-text>
+    <mdc-card-actions>
+      <mdc-card-action-button @click="done(m)">Move to Backlog</mdc-card-action-button>
+    </mdc-card-actions>
+  </mdc-card>
+  <div class="backboard" v-if="msgs.length === 0">
+    <mdc-icon icon="wb_sunny"></mdc-icon>
+    <div class="hint">All Done!</div>
+  </div>
+</main>

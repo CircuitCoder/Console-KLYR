@@ -13,18 +13,35 @@ extern crate env_logger;
 extern crate serde_json;
 #[macro_use]
 extern crate log;
+extern crate rand;
 
 mod data;
 mod handler;
 mod storage;
 
 use actix::{Arbiter, System};
+use actix_web::fs::StaticFileConfig;
 use actix_web::{fs, fs::NamedFile, http::Method, server, App, HttpRequest, Result};
 use futures::Future;
 use handler::State;
 
-fn get_index(_: &HttpRequest<State>) -> Result<NamedFile> {
-	Ok(NamedFile::open("./static-dist/index.html")?)
+#[derive(Default)]
+struct NoCacheConfig;
+impl StaticFileConfig for NoCacheConfig {
+	fn is_use_etag() -> bool {
+		false
+	}
+
+	fn is_use_last_modifier() -> bool {
+		false
+	}
+}
+
+fn get_index(_: &HttpRequest<State>) -> Result<NamedFile<NoCacheConfig>> {
+	Ok(NamedFile::open_with_config(
+		"./static-dist/index.html",
+		NoCacheConfig,
+	)?)
 }
 
 fn build_app() -> App<State> {
@@ -49,8 +66,20 @@ fn build_app() -> App<State> {
 					r.method(Method::GET).f(handler::chrono::get_chrono);
 					r.method(Method::PUT).f(handler::chrono::update_chrono)
 				})
+				.nested("/msg", |scope| {
+					scope
+						.resource("", |r| {
+							r.method(Method::GET).f(handler::msg::fetch_msgs);
+						})
+						.resource("/done", |r| {
+							r.method(Method::POST).f(handler::msg::done_msg);
+						})
+				})
 		})
-		.handler("/static", fs::StaticFiles::new("./static-dist").unwrap())
+		.handler(
+			"/static",
+			fs::StaticFiles::with_config("./static-dist", NoCacheConfig).unwrap(),
+		)
 		.default_resource(|r| r.method(Method::GET).f(get_index))
 }
 

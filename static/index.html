@@ -14,13 +14,14 @@
   <script src="https://unpkg.com/vue/dist/vue.min.js"></script>
   <script src="https://unpkg.com/vue-router/dist/vue-router.min.js"></script>
   <script src="https://unpkg.com/vue-mdc-adapter/dist/vue-mdc-adapter.min.js"></script>
+  <script src="https://unpkg.com/moment/min/moment-with-locales.min.js"></script>
   <script src="/static/script.js"></script>
 </head>
 
 <body onload="bootstrap()">
   <div id="app">
     <mdc-layout-app>
-      <mdc-toolbar slot="toolbar" waterfall>
+      <mdc-toolbar slot="toolbar" fixed>
         <mdc-toolbar-row>
           <mdc-toolbar-section align-start>
             <mdc-toolbar-menu-icon event="toggle-drawer">
@@ -28,8 +29,16 @@
             <mdc-toolbar-title>{{ title }}</mdc-toolbar-title>
           </mdc-toolbar-section>
           <mdc-toolbar-section align-end>
-            <mdc-toolbar-icon event="toggle-help" icon="help">
-            </mdc-toolbar-icon>
+            <div class="toolbar-time">
+              <div class="toolbar-day">{{ chrono.day }}</div>
+              <div class="toolbar-time-clock">
+                <span class="toolbar-time-seg">{{ chrono.hour }}</span>
+                :
+                <span class="toolbar-time-seg">{{ chrono.min }}</span>
+                :
+                <span class="toolbar-time-seg">{{ chrono.sec }}</span>
+              </div>
+            </div>
           </mdc-toolbar-section>
         </mdc-toolbar-row>
       </mdc-toolbar>
@@ -39,14 +48,17 @@
           <mdc-drawer-item start-icon="art_track" :to="{ name: 'Home' }">News</mdc-drawer-item>
           <mdc-drawer-item start-icon="merge_type">Reactor Tree View</mdc-drawer-item>
           <mdc-drawer-divider></mdc-drawer-divider>
-          <mdc-drawer-item start-icon="inbox">Inbox</mdc-drawer-item>
-          <mdc-drawer-item start-icon="timer">Chronometer</mdc-drawer-item>
+          <mdc-drawer-item start-icon="inbox" :to="{ name: 'Inbox' }">Inbox</mdc-drawer-item>
+          <mdc-drawer-item start-icon="timer" :to="{ name: 'Chronometer' }">Chronometer</mdc-drawer-item>
         </mdc-drawer-list>
       </mdc-drawer>
 
       <transition name="fade" mode="out-in">
         <router-view
-          @snack="snack($event)"></router-view>
+          @snack="snack($event)"
+          :msgs="msgs"
+          :chrono="chrono"
+          :chronoDesc="chronoDesc"></router-view>
       </transition>
 
       <mdc-snackbar ref="snackbar"></mdc-snackbar>

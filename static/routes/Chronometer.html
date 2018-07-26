@@ -1,0 +1,39 @@
+<main class="middle">
+  <mdc-card>
+    <mdc-card-header>Chronometer</mdc-card-header>
+    <mdc-card-text>
+      <div class="chrono-timer">
+        <div class="chrono-day">{{ chrono.day }}</div>
+        <div class="chrono-time">
+          <div class="chrono-seg">{{ chrono.hour }}</div>
+          :
+          <div class="chrono-seg">{{ chrono.min }}</div>
+          :
+          <div class="chrono-seg">{{ chrono.sec }}</div>
+        </div>
+      </div>
+      <div class="chrono-ratio">
+        <mdc-textfield
+          :valid="validRatio"
+          box
+          v-model="ratioModel"
+          leading-icon="timelapse"
+          helptext="Please input an legal decimal number"
+          helptext-validation
+          label="Ratio"></mdc-textfield>
+        <div>
+          <mdc-button @click="presets = true">Presets</mdc-button>
+          <mdc-menu v-model="presets" @select="selectPreset" @cancel="presets = false">
+            <mdc-menu-item>x6</mdc-menu-item>
+            <mdc-menu-item>x1</mdc-menu-item>
+            <mdc-menu-divider></mdc-menu-divider>
+            <mdc-menu-item>STALL</mdc-menu-item>
+          </mdc-menu>
+        </div>
+      </div>
+    </mdc-card-text>
+    <mdc-card-actions>
+      <mdc-card-action-button @click="updateRatio()">Update Ratio</mdc-card-action-button>
+    </mdc-card-actions>
+  </mdc-card>
+</main>

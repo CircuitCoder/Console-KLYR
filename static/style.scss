@@ -6,14 +6,32 @@ $mdc-theme-background: #fff;
 @import 'styles/fix';
 @import 'styles/transitions';
 
-.mdc-layout-app--content-wrapper {
+body {
   background: #eceff1;
+  font-family: sans-serif;
 }
 
 main {
   max-width: 900px;
   padding: 60px 40px;
   margin: 0 auto;
+  height: 100%;
+
+  &.narrow {
+    max-width: 600px;
+  }
+
+  &.middle {
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    > div {
+      max-width: 600px;
+      width: 100%;
+    }
+  }
 }
 
 .expand-width {
@@ -22,3 +40,43 @@ main {
     width: 100%;
   }
 }
+
+.card-gap {
+  margin-bottom: 20px;
+}
+
+.toolbar-time {
+  align-self: center;
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-direction: column;
+
+  font-family: sans-serif;
+  font-size: 12px;
+  color: rgba(255,255,255,.54);
+
+  margin-right: 16px;
+
+  .toolbar-time-clock {
+    font-size: 16px;
+    margin-left: 10px;
+    color: rgba(255,255,255,.87);
+  }
+}
+
+.backboard {
+  color: rgba(0,0,0,.38);
+  text-align: center;
+
+  .material-icons {
+    font-size: 144px;
+  }
+
+  .hint {
+    font-size: 40px;
+    margin-top: 20px;
+  }
+}
+
+@import 'styles/chronometer';

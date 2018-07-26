@@ -6,7 +6,6 @@ use handler::AsyncResponse;
 use handler::Request;
 
 pub fn update_chrono(req: &Request) -> AsyncResponse {
-	// TODO: clone state instead, as it only needs an Arc
 	let _state = req.state().clone();
 
 	req

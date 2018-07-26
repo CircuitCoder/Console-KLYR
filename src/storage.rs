@@ -51,7 +51,10 @@ fn non_err(
 ) -> impl Future<Item = (), Error = StorageError> {
 	match input {
 		Ok(v) => match v {
-			RespValue::Error(_) => future::err(StorageError::Format),
+			RespValue::Error(e) => {
+				debug!("Redis inner error: {}", e);
+				future::err(StorageError::Format)
+			}
 			_ => future::ok(()),
 		},
 		Err(e) => future::err(StorageError::Redis(e)),
@@ -83,7 +86,7 @@ where
 		})
 		.filter_map(|v| match v {
 			Ok(v) => Some(v),
-			Err(v) => None,
+			Err(_) => None,
 		})
 		.collect();
 
@@ -101,8 +104,7 @@ impl Storage {
 	}
 
 	pub fn setup(&self) -> impl Future<Item = (), Error = StorageError> {
-		self
-			.put_post(&Post::demo())
+		self.put_post(&Post::demo())
 			.join(self.set_chrono_spec(Default::default()))
 			.map(|_| ())
 	}
@@ -114,8 +116,7 @@ impl Storage {
 		tag: Option<String>,
 	) -> impl Future<Item = Vec<String>, Error = StorageError> {
 		let key = String::from("post:tag:") + &tag.unwrap_or_else(|| String::from(""));
-		self
-			.db
+		self.db
 			.send(Command(RespValue::Array(vec![
 				"ZREVRANGE".into(),
 				key.into(),
@@ -138,7 +139,9 @@ impl Storage {
 				let posts = array
 					.into_iter()
 					.filter_map(|e| match e {
-						RespValue::BulkString(cont) => Some(String::from(String::from_utf8_lossy(&cont))),
+						RespValue::BulkString(cont) => {
+							Some(String::from(String::from_utf8_lossy(&cont)))
+						}
 						RespValue::SimpleString(cont) => Some(cont),
 						_ => None,
 					})
@@ -167,8 +170,7 @@ impl Storage {
 		};
 
 		Either::B(
-			self
-				.db
+			self.db
 				.send(Command(RespValue::Array(vec![
 					"SET".into(),
 					id.into(),
@@ -179,7 +181,11 @@ impl Storage {
 		)
 	}
 
-	pub fn accept_post(&self, id: i64, time: u64) -> impl Future<Item = Post, Error = StorageError> {
+	pub fn accept_post(
+		&self,
+		id: i64,
+		time: u64,
+	) -> impl Future<Item = Post, Error = StorageError> {
 		let original = format!("post:pending:{}", id);
 		let target = format!("post:content:{}", id);
 
@@ -189,8 +195,7 @@ impl Storage {
 		);
 		let _self = self.clone();
 
-		self
-			.db
+		self.db
 			.send(Command(RespValue::Array(vec![
 				"EVAL".into(),
 				atomic_get_del.into_bytes().into(),
@@ -204,7 +209,9 @@ impl Storage {
 				};
 
 				let content = match inner {
-					RespValue::Error(_) => return Either::A(future::err(StorageError::DivergedState)),
+					RespValue::Error(_) => {
+						return Either::A(future::err(StorageError::DivergedState))
+					}
 					RespValue::SimpleString(s) => serde_json::from_str(&s),
 					RespValue::BulkString(s) => serde_json::from_slice(&s),
 					_ => return Either::A(future::err(StorageError::Format)),
@@ -246,8 +253,7 @@ impl Storage {
 			command += &format!("redis.call('ZADD', 'post:tag:{}', '{}', {})\n", e, id, id);
 		}
 		Either::B(
-			self
-				.db
+			self.db
 				.send(Command(RespValue::Array(vec![
 					"EVAL".into(),
 					command.into(),
@@ -273,8 +279,7 @@ impl Storage {
 		let original = format!("post:content:{}", id);
 		let target = format!("post:deleted:{}", id);
 
-		self
-			.db
+		self.db
 			.send(Command(RespValue::Array(vec![
 				"RENAMENX".into(),
 				original.into_bytes().into(),
@@ -305,8 +310,7 @@ impl Storage {
 			command += &format!("redis.call('ZREM', 'post:tag:{}', '{}')\n", e, id);
 		}
 		Either::B(
-			self
-				.db
+			self.db
 				.send(Command(RespValue::Array(vec![
 					"EVAL".into(),
 					command.into(),
@@ -333,7 +337,10 @@ impl Storage {
 
 	/* Reactor */
 
-	pub fn fetch_steps(&self, s: Vec<String>) -> impl Future<Item = Vec<Step>, Error = StorageError> {
+	pub fn fetch_steps(
+		&self,
+		s: Vec<String>,
+	) -> impl Future<Item = Vec<Step>, Error = StorageError> {
 		self.multi_fetch(s, "step:content")
 	}
 
@@ -349,8 +356,7 @@ impl Storage {
 		};
 
 		Either::B(
-			self
-				.db
+			self.db
 				.send(Command(RespValue::Array(vec![
 					"SET".into(),
 					id.into(),
@@ -370,16 +376,14 @@ impl Storage {
 		let mut command = vec!["SADD".into(), id.into_bytes().into()];
 		command.extend(assignees.into_iter().map(|a| a.into_bytes().into()));
 
-		self
-			.db
+		self.db
 			.send(Command(RespValue::Array(command)))
 			.map(|_| ())
 			.from_err()
 	}
 
 	pub fn stage_step(&self, id: i64) -> impl Future<Item = (), Error = StorageError> {
-		self
-			.db
+		self.db
 			.send(Command(RespValue::Array(vec![
 				"SADD".into(),
 				"step:stage".to_owned().into_bytes().into(),
@@ -390,8 +394,7 @@ impl Storage {
 	}
 
 	pub fn resolve_step(&self, id: i64) -> impl Future<Item = (), Error = StorageError> {
-		self
-			.db
+		self.db
 			.send(Command(RespValue::Array(vec![
 				"SREM".into(),
 				"step:stage".to_owned().into_bytes().into(),
@@ -400,7 +403,7 @@ impl Storage {
 			.map(|_| ())
 			.from_err()
 
-			// TODO: bulk resolve
+		// TODO: bulk resolve
 	}
 
 	pub fn fetch_next_step_id(&self) -> impl Future<Item = i64, Error = StorageError> {
@@ -409,8 +412,7 @@ impl Storage {
 
 	/* Chronometer */
 	pub fn get_chrono_spec(&self) -> impl Future<Item = ChronoSpec, Error = StorageError> {
-		self
-			.db
+		self.db
 			.send(Command(RespValue::Array(vec![
 				"GET".into(),
 				"chrono:spec".to_owned().into_bytes().into(),
@@ -436,15 +438,17 @@ impl Storage {
 			})
 	}
 
-	pub fn set_chrono_spec(&self, spec: ChronoSpec) -> impl Future<Item = (), Error = StorageError> {
+	pub fn set_chrono_spec(
+		&self,
+		spec: ChronoSpec,
+	) -> impl Future<Item = (), Error = StorageError> {
 		let converted = match serde_json::to_vec(&spec) {
 			Ok(v) => v,
 			Err(_) => return future::Either::A(future::err(StorageError::Format)),
 		};
 
 		future::Either::B(
-			self
-				.db
+			self.db
 				.send(Command(RespValue::Array(vec![
 					"SET".into(),
 					"chrono:spec".to_owned().into_bytes().into(),
@@ -457,14 +461,34 @@ impl Storage {
 
 	/* Users */
 	pub fn get_groups(&self, id: String) -> impl Future<Item = Vec<String>, Error = StorageError> {
-		self
-			.db
+		self.db
 			.send(Command(RespValue::Array(vec![
 				"SMEMBERS".into(),
 				format!("user:{}:groups", id).into_bytes().into(),
 			])))
 			.from_err()
-			.and_then(parse_arr)
+			.and_then(|v| {
+				let v = match v {
+					Ok(v) => v,
+					Err(e) => return future::err(StorageError::Redis(e)),
+				};
+
+				let v = match v {
+					RespValue::Array(a) => a,
+					_ => return future::err(StorageError::Format),
+				};
+
+				let r = v
+					.into_iter()
+					.filter_map(|v| match v {
+						RespValue::SimpleString(s) => Some(s),
+						RespValue::BulkString(s) => String::from_utf8(s).ok(),
+						_ => None,
+					})
+					.collect();
+
+				future::ok(r)
+			})
 	}
 
 	/* Messaging */
@@ -472,10 +496,10 @@ impl Storage {
 		&self,
 		target: &Vec<Rcpt>,
 	) -> impl Future<Item = Vec<Message>, Error = StorageError> {
+		debug!("Rcpts: {:?}", target);
 		let mut command = vec!["SUNION".into()];
 		command.extend(target.iter().map(|v| v.mailbox().into_bytes().into()));
-		self
-			.db
+		self.db
 			.send(Command(RespValue::Array(command)))
 			.from_err()
 			.and_then(parse_arr)
@@ -485,37 +509,39 @@ impl Storage {
 		let mailbox = msg.rcpt.mailbox();
 		let serialized = match serde_json::to_vec(&msg) {
 			Ok(s) => s,
-			Err(e) => return Either::A(future::err(StorageError::Format)),
+			Err(_) => return Either::A(future::err(StorageError::Format)),
 		};
 
+		debug!("Insert msg: {} <- {:?}", mailbox, msg);
+
 		Either::B(
-			self
-				.db
+			self.db
 				.send(Command(RespValue::Array(vec![
-					"ZADD".into(),
+					"SADD".into(),
 					mailbox.into_bytes().into(),
 					serialized.into(),
-					RespValue::Integer(msg.time as i64),
+					// RespValue::Integer(msg.time as i64),
 				])))
-				.map(|_| ())
-				.from_err(),
+				.from_err()
+				.and_then(non_err),
 		)
 	}
 
 	pub fn done_msg(&self, msg: Message) -> impl Future<Item = (), Error = StorageError> {
 		let mailbox = msg.rcpt.mailbox();
-		// FIXME: what was the name of the command?
+		let backlog = msg.rcpt.backlog();
+
 		let serialized = match serde_json::to_vec(&msg) {
 			Ok(s) => s,
 			Err(e) => return Either::A(future::err(StorageError::Format)),
 		};
 
 		Either::B(
-			self
-				.db
+			self.db
 				.send(Command(RespValue::Array(vec![
-					"ZREM".into(),
+					"SMOVE".into(),
 					mailbox.into_bytes().into(),
+					backlog.into_bytes().into(),
 					serialized.into(),
 				])))
 				.map(|_| ())
@@ -525,8 +551,7 @@ impl Storage {
 
 	/* Internal */
 	pub fn next_id(&self, desc: &'static str) -> impl Future<Item = i64, Error = StorageError> {
-		self
-			.db
+		self.db
 			.send(Command(RespValue::Array(vec![
 				"INCR".into(),
 				format!("{}:counter", desc).to_owned().into_bytes().into(),
