@@ -14,8 +14,9 @@ module.exports = {
       overrides: {
         "if": { "after": false },
         "for": { "after": false },
-        "while": { "after": false }
-      }
+        "while": { "after": false },
+        "catch": { "after": false },
+      },
     }],
   },
 };

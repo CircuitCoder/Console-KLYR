@@ -3,6 +3,8 @@ import NewPost from './routes/NewPost';
 import Inbox from './routes/Inbox';
 import Chronometer from './routes/Chronometer';
 
+import EmbDigest from './components/EmbDigest';
+
 import { request } from './util';
 
 const MSG_POLL_INTERVAL = 10 * 1000;
@@ -22,7 +24,7 @@ const router = new VueRouter({
 
 const desc = {
   data: {
-    internalTitle: 'Home',
+    internalTitle: 'Console KLYR',
 
     msgs: [],
     chrono: {
@@ -36,6 +38,10 @@ const desc = {
   },
 
   router,
+
+  components: {
+    EmbDigest,
+  },
 
   methods: {
     async updateMsg(/* muted = false */) {

@@ -12,15 +12,14 @@ use futures::future::Either;
 use futures::{future, Future};
 use handler::{AsyncResponse, Request};
 use storage::StorageError;
+use util;
 
 pub fn list_posts(req: &Request) -> AsyncResponse {
-	let _state = req.state().clone();
 	let tag = req.query().get("tag").cloned();
 
-	let filter_fut = req.state().storage.filter_posts(tag);
-	let post_fut = filter_fut.and_then(move |ids| _state.storage.fetch_posts(ids));
-
-	post_fut
+	req.state()
+		.storage
+		.filter_posts(tag)
 		.map_err(|e| e.into())
 		.map(|p| HttpResponse::Ok().json(p))
 		.responder()
@@ -114,9 +113,11 @@ pub fn accept_post(req: &Request) -> AsyncResponse {
 		.join(_state3.storage.get_chrono_spec())
 		.and_then(move |(post, chrono)| {
 			let msg = Message::new(
-				MessageContent::ReviewPassed{ id: post.id.unwrap() },
+				MessageContent::ReviewPassed {
+					id: post.id.unwrap(),
+				},
 				chrono.now(),
-				Rcpt::User(post.author)
+				Rcpt::User(post.author),
 			);
 			_state3.storage.send_msg(msg)
 		})
@@ -149,4 +150,41 @@ pub fn delete_post(req: &Request) -> AsyncResponse {
 		.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
 		.map_err(|e| e.into())
 		.responder()
+}
+
+fn digest_amplifier<T>(fut: T) -> AsyncResponse
+where
+	T: Future<Item = Vec<Post>, Error = StorageError> + 'static,
+{
+	fut.map_err(|e| e.into())
+		.and_then(|mut posts| {
+			if posts.len() != 1 {
+				return future::err(error::ErrorNotFound("Not Found"));
+			};
+
+			let mut post = posts.pop().unwrap();
+			post.content = util::digest_markdown(&post.content, 40);
+			future::ok(HttpResponse::Ok().json(post))
+		})
+		.responder()
+}
+
+pub fn digest_post(req: &Request) -> AsyncResponse {
+	let pending = req.query().get("pending").is_some();
+	let id = Path::<(i64,)>::extract(req);
+
+	let id = match id {
+		Ok(v) => v,
+		Err(_) => return future::err(error::ErrorNotFound("Not Found")).responder(),
+	};
+
+	if pending {
+		digest_amplifier(
+			req.state()
+				.storage
+				.fetch_pending_posts(vec![id.0.to_string()]),
+		)
+	} else {
+		digest_amplifier(req.state().storage.fetch_posts(vec![id.0.to_string()]))
+	}
 }

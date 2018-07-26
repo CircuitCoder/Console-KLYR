@@ -158,6 +158,13 @@ impl Storage {
 		self.multi_fetch(posts, "post:content")
 	}
 
+	pub fn fetch_pending_posts(
+		&self,
+		posts: Vec<String>,
+	) -> impl Future<Item = Vec<Post>, Error = StorageError> {
+		self.multi_fetch(posts, "post:pending")
+	}
+
 	pub fn put_post(&self, p: &Post) -> impl Future<Item = (), Error = StorageError> {
 		let id = match p.id {
 			Some(id) => format!("post:pending:{}", id),
@@ -533,7 +540,7 @@ impl Storage {
 
 		let serialized = match serde_json::to_vec(&msg) {
 			Ok(s) => s,
-			Err(e) => return Either::A(future::err(StorageError::Format)),
+			Err(_) => return Either::A(future::err(StorageError::Format)),
 		};
 
 		Either::B(

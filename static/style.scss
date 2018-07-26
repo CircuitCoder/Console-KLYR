@@ -5,6 +5,7 @@ $mdc-theme-background: #fff;
 @import 'vue-mdc-adapter/dist/styles';
 @import 'styles/fix';
 @import 'styles/transitions';
+@import 'styles/components';
 
 body {
   background: #eceff1;

@@ -4,7 +4,8 @@
     <mdc-card-header v-if="'ReviewPassed' in m.content">News Piece Accepted</mdc-card-header>
     <mdc-card-header v-if="'ReviewRejected' in m.content">News Piece Rejected</mdc-card-header>
     <mdc-card-text>
-      TODO: card
+      <emb-digest v-if="'WaitingReview' in m.content" type="post" :id="m.content.WaitingReview.id" :pending="true"></emb-digest>
+      <emb-digest v-if="'ReviewPassed' in m.content" type="post" :id="m.content.ReviewPassed.id" :pending="true"></emb-digest>
     </mdc-card-text>
     <mdc-card-actions>
       <mdc-card-action-button @click="done(m)">Move to Backlog</mdc-card-action-button>

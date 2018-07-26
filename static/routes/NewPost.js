@@ -6,16 +6,22 @@ export default Vue.component('NewPost', {
 
   data: () => ({
     title: '',
-    content: '',
     category: '',
+
+    mde: null,
   }),
+
+  mounted() {
+    /* global SimpleMDE */
+    this.mde = new SimpleMDE({ element: this.$refs.content });
+  },
 
   methods: {
     async submit() {
       const resp = await request('/api/posts', 'POST', {
         title: this.title,
         author: 'root',
-        content: this.content,
+        content: this.mde.value(),
         tags: [this.category],
         time: 0, // This is ignored
       });

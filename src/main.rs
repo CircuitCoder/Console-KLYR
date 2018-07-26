@@ -14,10 +14,12 @@ extern crate serde_json;
 #[macro_use]
 extern crate log;
 extern crate rand;
+extern crate pulldown_cmark;
 
 mod data;
 mod handler;
 mod storage;
+mod util;
 
 use actix::{Arbiter, System};
 use actix_web::fs::StaticFileConfig;
@@ -60,6 +62,9 @@ fn build_app() -> App<State> {
 						})
 						.resource("/{id}/accept", |r| {
 							r.method(Method::PUT).f(handler::post::accept_post)
+						})
+						.resource("/{id}/digest", |r| {
+							r.method(Method::GET).f(handler::post::digest_post)
 						})
 				})
 				.resource("/chrono", |r| {

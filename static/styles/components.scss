@@ -1,0 +1,12 @@
+.emb-digest {
+  border-radius: 4px;
+  border: rgba(0,0,0,.12) 1px solid;
+  padding: 0 20px;
+  overflow: hidden;
+
+  @include mdc-ripple-surface;
+  @include mdc-ripple-radius-bounded;
+  @include mdc-states;
+
+  cursor: pointer;
+}
