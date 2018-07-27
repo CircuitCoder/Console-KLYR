@@ -6,6 +6,9 @@
       <span v-if="'ReviewPassed' in m.content">Accepted</span>
       <span v-if="'ReviewRejected' in m.content">Rejected</span>
 
+      <span v-if="'StepCreated' in m.content">New Instruction</span>
+      <span v-if="'StepAssigned' in m.content">New Assignment</span>
+
       <span v-if="'Group' in m.rcpt" class="group-ind">
         <mdc-icon icon="arrow_right"></mdc-icon>
         {{ m.rcpt.Group }}
@@ -36,6 +39,18 @@
         type="post"
         :id="m.content.ReviewRejected.id"
         :pending="true"></emb-digest>
+
+      <emb-digest
+        @click.native="toStep(m)"
+        v-if="'StepCreated' in m.content"
+        type="step"
+        :id="m.content.StepCreated.id"></emb-digest>
+
+      <emb-digest
+        @click.native="toStep(m)"
+        v-if="'StepAssigned' in m.content"
+        type="step"
+        :id="m.content.StepAssigned.id"></emb-digest>
     </mdc-card-text>
     <mdc-card-actions>
       <mdc-card-action-button @click="done(m)"><i class="material-icons mdc-button__icon">archive</i>Move to Backlog</mdc-card-action-button>

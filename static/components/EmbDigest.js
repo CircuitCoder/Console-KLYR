@@ -17,6 +17,8 @@ export default Vue.component('emb-digest', {
     if(this.type === 'post') {
       url = `/api/posts/${this.id}/digest`;
       if(this.pending) url += '?pending';
+    } else if(this.type === 'step') {
+      url = `/api/steps/${this.id}`;
     } else {
       throw new Error(`Unsupported type: ${this.type}`);
     }

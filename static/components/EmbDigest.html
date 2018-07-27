@@ -10,4 +10,9 @@
     <mdc-title>{{ content.title }} <mdc-caption>#{{id}}</mdc-caption></mdc-title>
     <mdc-body>{{ content.content }}</mdc-body>
   </div>
+  <div class="emb-body" v-if="content !== null && type === 'step'">
+    <mdc-title>{{ content.step.title }} <mdc-caption>${{id}}</mdc-caption></mdc-title>
+    <mdc-body v-if="!content.step.parent">Orphan Instruction<mdc-body>
+    <mdc-body v-if="content.step.parent">Parent: ${{content.step.parent}}<mdc-body>
+  </div>
 </mdc-ripple>

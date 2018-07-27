@@ -23,11 +23,18 @@ export default Vue.component('Inbox', {
 
     toPost(p) {
       const evt = Object.keys(p.content)[0];
-      console.log(evt);
       this.$router.push({
         name: 'Post',
         params: { id: p.content[evt].id },
         query: { pending: evt !== 'ReviewPassed' },
+      });
+    },
+
+    toStep(p) {
+      const evt = Object.keys(p.content)[0];
+      this.$router.push({
+        name: 'Step',
+        params: { id: p.content[evt].id },
       });
     },
   },
