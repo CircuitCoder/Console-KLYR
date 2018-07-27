@@ -100,8 +100,34 @@ pub fn create(req: &Request) -> AsyncResponse {
 			chrono.now(),
 			Rcpt::Group("coordinators".to_owned())
 		);
-		state2.storage.send_msg(msg).map_err(|e| e.into())
+		state2.storage.send_msg(msg).map_err(|e| e.into()).map(move |_| id)
 	})
-	.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
+	.map(|id| HttpResponse::Ok().body(format!(r#"{{"ok":true,"id":{}}}"#, id)))
+	.responder()
+}
+
+pub fn detail(req: &Request) -> AsyncResponse {
+	let id = Path::<(i64,)>::extract(req);
+	let id = match id {
+		Ok(id) => id,
+		Err(_) => return future::err(error::ErrorNotFound("Not Found")).responder(),
+	};
+
+	let id = id.0;
+	let state = req.state().clone();
+
+	state.storage.fetch_steps(vec![id.to_string()])
+	.map_err(|e| e.into())
+	.and_then(|mut e| {
+		if e.len() != 1 {
+			return future::err(error::ErrorNotFound("Not Found"));
+		}
+		future::ok(e.pop().unwrap())
+	})
+	.join(state.storage.get_step_assignees(id).map_err(|e| e.into()))
+	.join(state.storage.is_step_staged(id).map_err(|e| e.into()))
+	.map(|((step, assignees), staged)| {
+		HttpResponse::Ok().json(StepDetail{ step, assignees, staged })
+	})
 	.responder()
 }

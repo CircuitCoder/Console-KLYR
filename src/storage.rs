@@ -420,6 +420,16 @@ impl Storage {
 			.from_err()
 	}
 
+	pub fn get_step_assignees(&self, id: i64) -> impl Future<Item = Vec<String>, Error = StorageError> {
+		self.db
+			.send(Command(RespValue::Array(vec![
+				"SMEMBERS".into(),
+				format!("step:assignees:{}", id).into_bytes().into(),
+			])))
+			.from_err()
+			.and_then(parse_string_vec)
+	}
+
 	pub fn stage_step(&self, id: i64) -> impl Future<Item = (), Error = StorageError> {
 		self.db
 			.send(Command(RespValue::Array(vec![
@@ -442,6 +452,27 @@ impl Storage {
 			.from_err()
 
 		// TODO: bulk resolve
+	}
+
+	pub fn is_step_staged(&self, id: i64) -> impl Future<Item = bool, Error = StorageError> {
+		self.db
+			.send(Command(RespValue::Array(vec![
+				"SISMEMBER".into(),
+				"step:stage".to_owned().into_bytes().into(),
+				id.to_string().into_bytes().into(),
+			])))
+			.from_err()
+			.and_then(|e| {
+				let e = match e {
+					Ok(e) => e,
+					Err(e) => return future::err(StorageError::Redis(e)),
+				};
+
+				match e {
+					RespValue::Integer(i) => future::ok(i == 1),
+					_ => future::err(StorageError::Format),
+				}
+			})
 	}
 
 	pub fn fetch_staged_steps(&self) -> impl Future<Item = Vec<String>, Error = StorageError> {

@@ -17,8 +17,14 @@ export default Vue.component('NewStep', {
 
   methods: {
     async submit() {
+      let parent = null;
+
+      if(this.$route.name === 'ReplyStep') {
+        parent = parseInt(this.$route.params.id, 10);
+      }
+
       const resp = await request('/api/steps', 'POST', {
-        parent: null,
+        parent,
 
         title: this.title,
         content: this.mde.value(),
@@ -28,6 +34,11 @@ export default Vue.component('NewStep', {
       if(resp.ok) {
         this.$root.$emit('show-snackbar', {
           message: 'Success',
+        });
+
+        this.$router.push({
+          name: 'Step',
+          params: { id: resp.id },
         });
       } else {
         this.$root.$emit('show-snackbar', {

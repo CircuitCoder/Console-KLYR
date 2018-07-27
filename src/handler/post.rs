@@ -65,9 +65,9 @@ pub fn new_post(req: &Request) -> AsyncResponse {
 				time,
 				Rcpt::Group("reviewers".to_owned()),
 			);
-			_state2.storage.send_msg(msg).map_err(|e| e.into())
+			_state2.storage.send_msg(msg).map_err(|e| e.into()).map(move |_| id)
 		})
-		.map(|_| HttpResponse::Ok().body(r#"{"ok":true}"#))
+		.map(|id| HttpResponse::Ok().body(format!(r#"{{"ok":true,"id":{}}}"#, id)))
 		.responder()
 }
 

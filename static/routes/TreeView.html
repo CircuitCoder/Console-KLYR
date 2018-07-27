@@ -16,7 +16,7 @@
           <post-inner :html="markdownit().render(s.content)"></post-inner>
         </div>
         <div class="actions">
-          <mdc-button dense><i class="material-icons mdc-button__icon">arrow_forward</i>Details</mdc-button>
+          <mdc-button dense :to="{ name: 'Step', params: { id: s.id }}"><i class="material-icons mdc-button__icon">arrow_forward</i>Details</mdc-button>
         </div>
       </div>
     </div>

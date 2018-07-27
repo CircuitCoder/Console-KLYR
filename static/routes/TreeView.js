@@ -1,5 +1,4 @@
 import tmpl from './TreeView.html';
-import { request } from '../util';
 
 export default Vue.component('TreeView', {
   template: tmpl,
@@ -11,7 +10,7 @@ export default Vue.component('TreeView', {
   methods: {
     formatTime(t) {
       /* global moment */
-      return moment(t).format('MM/DD HH:mm:ss');
+      return moment(t * 1000).format('MM/DD HH:mm:ss');
     },
 
     toggle(id) {

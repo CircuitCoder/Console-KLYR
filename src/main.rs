@@ -79,8 +79,11 @@ fn build_app() -> App<State> {
 					.resource("/staged", |r| {
 						r.method(Method::GET).f(handler::step::fetch_staged)
 					})
+					.resource("/{id}", |r| {
+						r.method(Method::GET).f(handler::step::detail)
+					})
 					.resource("/{id}/assign", |r| {
-						r.method(Method::POST).f(handler::step::assign)
+						r.method(Method::PUT).f(handler::step::assign)
 					})
 					.resource("/{id}/resolve", |r| {
 						r.method(Method::POST).f(handler::step::resolve)

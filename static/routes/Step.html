@@ -1,0 +1,40 @@
+<main :class="{ middle: content === null, narrow: content !== null }">
+  <div :class="{ 'left-slided': content === null }">
+    <div>
+      <mdc-button dense @click="$router.back()"><i class="material-icons mdc-button__icon">arrow_back</i>Back</mdc-button>
+      <mdc-button dense @click="reply()" v-if="canReply"><i class="material-icons mdc-button__icon">reply</i>Reply</mdc-button>
+      <mdc-button dense @click="assign()" v-if="canAssign"><i class="material-icons mdc-button__icon">assignment_ind</i>Assign</mdc-button>
+      <mdc-button dense @click="resolve()" v-if="canAssign"><i class="material-icons mdc-button__icon">done</i>Resolve Rightaway</mdc-button>
+    </div>
+    <div v-if="content === null && !failed" class="backboard">
+      <mdc-icon icon="cloud_download"></mdc-icon>
+      <div class="hint">Loading...</div>
+    </div>
+    <div v-if="content === null && failed" class="backboard">
+      <mdc-icon icon="tab_unselected"></mdc-icon>
+      <div class="hint">It's gone!</div>
+    </div>
+    <div v-if="content !== null">
+      <mdc-display>{{ content.step.title }}</mdc-display>
+      <div class="step-status">
+        <mdc-subheading v-if="content.step.parent"><mdc-icon icon="device_hub"></mdc-icon> Parent: ${{content.step.parent}}</mdc-subheading>
+        <mdc-subheading v-if="content.assignees.length === 0"><mdc-icon icon="assignment_late"></mdc-icon> Not assigned yet</mdc-subheading>
+        <mdc-subheading v-if="content.assignees.length > 0"><mdc-icon icon="assignment_ind"></mdc-icon> Assigned to: {{ content.assignees.join(', ') }}</mdc-subheading>
+        <mdc-subheading v-if="!content.staged"><mdc-icon icon="done"></mdc-icon> Has been resolved</mdc-subheading>
+      </div>
+      <hr>
+      <post-inner :html="compiled"></post-inner>
+    </div>
+  </div>
+
+  <mdc-dialog v-model="assignment"
+    title="Assign People!" accept="Submit" cancel="Cancel"
+    @accept="submitAssignment()" @cancel="assignment = false">
+
+    <mdc-chip-set filter>
+      <mdc-chip leadingIcon="face" ref="chips" v-for="(r, i) of CONST.resolvers">{{ r.name }}</mdc-chip>
+    </mdc-chip-set>
+
+
+  </mdc-dialog>
+</main>

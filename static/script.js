@@ -5,6 +5,7 @@ import Chronometer from './routes/Chronometer';
 import Post from './routes/Post';
 import TreeView from './routes/TreeView';
 import NewStep from './routes/NewStep';
+import Step from './routes/Step';
 
 import EmbDigest from './components/EmbDigest';
 import PostInner from './components/PostInner';
@@ -23,6 +24,8 @@ const routes = [
   { name: 'EditPost', path: '/posts/:id/edit', component: NewPost },
   { name: 'TreeView', path: '/reactor', component: TreeView },
   { name: 'NewStep', path: '/reactor/new', component: NewStep },
+  { name: 'Step', path: '/reactor/:id', component: Step },
+  { name: 'ReplyStep', path: '/reactor/:id/reply', component: NewStep },
 ];
 
 /* global VueRouter */

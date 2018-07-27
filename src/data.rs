@@ -56,6 +56,13 @@ pub struct Step {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct StepDetail {
+	pub(crate) step: Step,
+	pub(crate) assignees: Vec<String>,
+	pub(crate) staged: bool,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct Comment {
 	content: String,
 	author: String,

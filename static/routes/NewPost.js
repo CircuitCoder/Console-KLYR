@@ -43,6 +43,11 @@ export default Vue.component('NewPost', {
         this.$root.$emit('show-snackbar', {
           message: 'Success',
         });
+        this.$router.push({
+          name: 'Post',
+          params: { id: resp.id },
+          query: { pending: true },
+        });
       } else {
         this.$root.$emit('show-snackbar', {
           message: 'Failed',

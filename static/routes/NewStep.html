@@ -1,6 +1,7 @@
 <main>
   <mdc-card class="card-demo">
-    <mdc-card-header>Create Instruction</mdc-card-header>
+    <mdc-card-header v-if="$route.name === 'NewStep'">Create Instruction</mdc-card-header>
+    <mdc-card-header v-if="$route.name === 'ReplyStep'">Reply to ${{$route.params.id}}</mdc-card-header>
     <mdc-card-text>
       <mdc-layout-grid>
         <mdc-layout-cell desktop="12" phone="12" align="bottom">
