@@ -3,9 +3,12 @@ import NewPost from './routes/NewPost';
 import Inbox from './routes/Inbox';
 import Chronometer from './routes/Chronometer';
 import Post from './routes/Post';
+import TreeView from './routes/TreeView';
+import NewStep from './routes/NewStep';
 
 import EmbDigest from './components/EmbDigest';
 import PostInner from './components/PostInner';
+import DisplayCard from './components/DisplayCard';
 
 import { request } from './util';
 
@@ -18,6 +21,8 @@ const routes = [
   { name: 'Chronometer', path: '/chronometer', component: Chronometer },
   { name: 'Post', path: '/posts/:id', component: Post },
   { name: 'EditPost', path: '/posts/:id/edit', component: NewPost },
+  { name: 'TreeView', path: '/reactor', component: TreeView },
+  { name: 'NewStep', path: '/reactor/new', component: NewStep },
 ];
 
 /* global VueRouter */
@@ -39,6 +44,8 @@ const desc = {
       subsec: null,
     },
     chronoDesc: null,
+
+    steps: [],
   },
 
   router,
@@ -46,6 +53,7 @@ const desc = {
   components: {
     EmbDigest,
     PostInner,
+    DisplayCard,
   },
 
   methods: {
@@ -59,13 +67,21 @@ const desc = {
       this.chronoDesc = await request('/api/chrono');
     },
 
+    async updateSteps() {
+      // TODO: authorize
+      this.steps = await request('/api/steps/staged');
+      this.steps.sort((a, b) => b - a);
+    },
+
     startLoop() {
       this.updateMsg(true);
       this.updateChrono();
+      this.updateSteps();
 
       setInterval(() => {
         this.updateMsg();
         this.updateChrono();
+        this.updateSteps();
       }, MSG_POLL_INTERVAL);
 
       this.tick();

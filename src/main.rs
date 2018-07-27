@@ -71,6 +71,21 @@ fn build_app() -> App<State> {
 							r.method(Method::GET).f(handler::post::digest_post)
 						})
 				})
+				.nested("/steps", |scope| {
+					scope
+					.resource("", |r| {
+						r.method(Method::POST).f(handler::step::create)
+					})
+					.resource("/staged", |r| {
+						r.method(Method::GET).f(handler::step::fetch_staged)
+					})
+					.resource("/{id}/assign", |r| {
+						r.method(Method::POST).f(handler::step::assign)
+					})
+					.resource("/{id}/resolve", |r| {
+						r.method(Method::POST).f(handler::step::resolve)
+					})
+				})
 				.resource("/chrono", |r| {
 					r.method(Method::GET).f(handler::chrono::get_chrono);
 					r.method(Method::PUT).f(handler::chrono::update_chrono)

@@ -1,0 +1,16 @@
+<main>
+  <mdc-card class="card-demo">
+    <mdc-card-header>Create Instruction</mdc-card-header>
+    <mdc-card-text>
+      <mdc-layout-grid>
+        <mdc-layout-cell desktop="12" phone="12" align="bottom">
+          <mdc-textfield class="expand-width" v-model="title" label="Title" box></mdc-textfield>
+        </mdc-layout-cell>
+        <mdc-layout-cell desktop="12" tablet="12" phone="12" align="bottom">
+          <textarea ref="content"></textarea>
+        </mdc-layout-cell>
+      </mdc-layout-grid>
+    </mdc-card-text>
+  </mdc-card>
+  <mdc-fab fixed icon="done" @click="submit()">
+</main>

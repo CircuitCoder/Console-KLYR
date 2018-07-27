@@ -38,6 +38,10 @@ export default Vue.component('Chronometer', {
     },
   },
 
+  mounted() {
+    console.log(this.chronoDesc);
+  },
+
   computed: {
     ratioModel: {
       get() {

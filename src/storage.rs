@@ -93,6 +93,31 @@ where
 	future::ok(r)
 }
 
+fn parse_string_vec(
+	v: Result<RespValue, actix_redis::Error>,
+) -> impl Future<Item = Vec<String>, Error = StorageError> {
+	let v = match v {
+		Ok(v) => v,
+		Err(e) => return future::err(StorageError::Redis(e)),
+	};
+
+	let v = match v {
+		RespValue::Array(a) => a,
+		_ => return future::err(StorageError::Format),
+	};
+
+	let r = v
+		.into_iter()
+		.filter_map(|v| match v {
+			RespValue::SimpleString(s) => Some(s),
+			RespValue::BulkString(s) => String::from_utf8(s).ok(),
+			_ => None,
+		})
+		.collect();
+
+	future::ok(r)
+}
+
 #[derive(Clone)]
 pub struct Storage {
 	db: Addr<RedisActor>,
@@ -104,7 +129,7 @@ impl Storage {
 	}
 
 	pub fn setup(&self) -> impl Future<Item = (), Error = StorageError> {
-		self.put_post(&Post::demo())
+		self.put_post(&Post::demo(), true)
 			.join(self.set_chrono_spec(Default::default()))
 			.map(|_| ())
 	}
@@ -165,7 +190,11 @@ impl Storage {
 		self.multi_fetch(posts, "post:pending")
 	}
 
-	pub fn put_post(&self, p: &Post) -> impl Future<Item = (), Error = StorageError> {
+	pub fn put_post(
+		&self,
+		p: &Post,
+		initial: bool,
+	) -> impl Future<Item = (), Error = StorageError> {
 		let id = match p.id {
 			Some(id) => format!("post:pending:{}", id),
 			None => return Either::A(future::err(StorageError::InvalidArgument)),
@@ -182,7 +211,7 @@ impl Storage {
 					"SET".into(),
 					id.into(),
 					formatted.into(),
-					"XX".into(),
+					if initial { "NX".into() } else { "XX".into() },
 				])))
 				.from_err()
 				.map(|_| ()),
@@ -219,7 +248,7 @@ impl Storage {
 				let content = match inner {
 					RespValue::Error(e) => {
 						debug!("{}", e);
-						return Either::A(future::err(StorageError::DivergedState))
+						return Either::A(future::err(StorageError::DivergedState));
 					}
 					RespValue::SimpleString(s) => serde_json::from_str(&s),
 					RespValue::BulkString(s) => serde_json::from_slice(&s),
@@ -415,6 +444,16 @@ impl Storage {
 		// TODO: bulk resolve
 	}
 
+	pub fn fetch_staged_steps(&self) -> impl Future<Item = Vec<String>, Error = StorageError> {
+		self.db
+			.send(Command(RespValue::Array(vec![
+				"SMEMBERS".into(),
+				"step:stage".to_owned().into_bytes().into(),
+			])))
+			.from_err()
+			.and_then(parse_string_vec)
+	}
+
 	pub fn fetch_next_step_id(&self) -> impl Future<Item = i64, Error = StorageError> {
 		self.next_id("step")
 	}
@@ -476,28 +515,7 @@ impl Storage {
 				format!("user:{}:groups", id).into_bytes().into(),
 			])))
 			.from_err()
-			.and_then(|v| {
-				let v = match v {
-					Ok(v) => v,
-					Err(e) => return future::err(StorageError::Redis(e)),
-				};
-
-				let v = match v {
-					RespValue::Array(a) => a,
-					_ => return future::err(StorageError::Format),
-				};
-
-				let r = v
-					.into_iter()
-					.filter_map(|v| match v {
-						RespValue::SimpleString(s) => Some(s),
-						RespValue::BulkString(s) => String::from_utf8(s).ok(),
-						_ => None,
-					})
-					.collect();
-
-				future::ok(r)
-			})
+			.and_then(parse_string_vec)
 	}
 
 	/* Messaging */
@@ -530,6 +548,32 @@ impl Storage {
 					mailbox.into_bytes().into(),
 					serialized.into(),
 					// RespValue::Integer(msg.time as i64),
+				])))
+				.from_err()
+				.and_then(non_err),
+		)
+	}
+
+	pub fn send_msgs(&self, msgs: Vec<Message>) -> impl Future<Item = (), Error = StorageError> {
+		let mut cmd = String::from("");
+		for msg in msgs {
+			let serialized = match serde_json::to_string(&msg) {
+				Ok(s) => s,
+				Err(_) => return Either::A(future::err(StorageError::Format)),
+			};
+			cmd += &format!(
+				"redis.call('SADD', '{}', '{}')\n",
+				msg.rcpt.mailbox(),
+				serialized
+			);
+		}
+
+		Either::B(
+			self.db
+				.send(Command(RespValue::Array(vec![
+					"EVAL".into(),
+					cmd.into(),
+					0.to_string().into_bytes().into(),
 				])))
 				.from_err()
 				.and_then(non_err),

@@ -50,8 +50,9 @@ pub struct Step {
 	pub(crate) id: Option<i64>,
 	pub(crate) parent: Option<i64>,
 
-	title: String,
-	content: String,
+	pub(crate) title: String,
+	pub(crate) content: String,
+	pub(crate) time: u64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -65,6 +66,9 @@ pub enum MessageContent {
 	WaitingReview { id: i64 },
 	ReviewPassed { id: i64 },
 	ReviewRejected { id: i64, comment: String },
+
+	StepAssigned { id: i64 },
+	StepCreated { id: i64 },
 }
 
 // TODO: create message

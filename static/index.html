@@ -51,7 +51,7 @@
           <mdc-drawer-item start-icon="inbox" :to="{ name: 'Inbox' }">Inbox</mdc-drawer-item>
           <mdc-drawer-divider></mdc-drawer-divider>
           <mdc-drawer-item start-icon="art_track" :to="{ name: 'Home' }">News</mdc-drawer-item>
-          <mdc-drawer-item start-icon="merge_type">Reactor</mdc-drawer-item>
+          <mdc-drawer-item start-icon="device_hub" :to="{ name: 'TreeView' }">Reactor</mdc-drawer-item>
           <mdc-drawer-item start-icon="timer" :to="{ name: 'Chronometer' }">Chronometer</mdc-drawer-item>
         </mdc-drawer-list>
       </mdc-drawer>
@@ -60,8 +60,9 @@
         <router-view
           @snack="snack($event)"
           :msgs="msgs"
+          :steps="steps"
           :chrono="chrono"
-          :chronoDesc="chronoDesc"></router-view>
+          :chrono-desc="chronoDesc"></router-view>
       </transition>
 
       <mdc-snackbar ref="snackbar"></mdc-snackbar>

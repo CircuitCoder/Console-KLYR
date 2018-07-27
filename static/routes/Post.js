@@ -74,6 +74,13 @@ export default Vue.component('Post', {
         });
       }
     },
+
+    edit() {
+      this.$router.push({
+        name: 'EditPost',
+        params: { id: this.$route.params.id },
+      });
+    },
   },
 
   watch: {

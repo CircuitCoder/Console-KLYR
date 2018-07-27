@@ -5,6 +5,7 @@ use storage::{Storage, StorageError};
 pub mod post;
 pub mod chrono;
 pub mod msg;
+pub mod step;
 
 type Request = HttpRequest<State>;
 type AsyncResponse = Box<Future<Item = HttpResponse, Error = Error>>;

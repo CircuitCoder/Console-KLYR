@@ -1,7 +1,8 @@
 <main :class="{ narrow: msgs.length > 0, middle: msgs.length === 0 }">
+  <mdc-display><mdc-icon icon="inbox"></mdc-icon> Inbox</mdc-display>
   <mdc-card v-for="m of msgs" class="card-gap inbox-card" :key="m.id">
     <mdc-card-header>
-      <span v-if="'WaitingReview' in m.content">New Pending Review</span>
+      <span v-if="'WaitingReview' in m.content">Pending Review</span>
       <span v-if="'ReviewPassed' in m.content">Accepted</span>
       <span v-if="'ReviewRejected' in m.content">Rejected</span>
 

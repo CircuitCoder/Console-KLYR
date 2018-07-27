@@ -53,7 +53,7 @@ pub fn new_post(req: &Request) -> AsyncResponse {
 						payload.set_id(id);
 						_state
 							.storage
-							.put_post(&payload)
+							.put_post(&payload, true)
 							.map(move |_| (id, payload.time))
 					})
 					.map_err(|e| e.into()),
@@ -88,7 +88,7 @@ pub fn update_post(
 		.and_then(move |chrono| {
 			let time = chrono.now();
 			payload.time = time;
-			state.storage.put_post(&payload).map(move |_| (state, time))
+			state.storage.put_post(&payload, false).map(move |_| (state, time))
 		})
 		.and_then(move |(state, time)| {
 			let msg = Message::new(
