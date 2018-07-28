@@ -17,6 +17,7 @@
     <div v-if="content !== null">
       <mdc-display>{{ content.step.title }}</mdc-display>
       <div class="step-status">
+        <mdc-subheading><mdc-icon icon="access_time"></mdc-icon> {{formatTime(content.step.time)}}</mdc-subheading>
         <mdc-subheading v-if="content.step.parent"><mdc-icon icon="device_hub"></mdc-icon> Parent: ${{content.step.parent}}</mdc-subheading>
         <mdc-subheading v-if="content.assignees.length === 0"><mdc-icon icon="assignment_late"></mdc-icon> Not assigned yet</mdc-subheading>
         <mdc-subheading v-if="content.assignees.length > 0"><mdc-icon icon="assignment_ind"></mdc-icon> Assigned to: {{ content.assignees.join(', ') }}</mdc-subheading>

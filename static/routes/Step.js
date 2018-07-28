@@ -99,6 +99,11 @@ export default Vue.component('Step', {
         params: { id: this.$route.params.id },
       });
     },
+
+    formatTime(t) {
+      /* global moment */
+      return moment(t * 1000).format('MM/DD HH:mm:ss');
+    },
   },
 
   watch: {

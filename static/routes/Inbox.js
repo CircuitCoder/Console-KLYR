@@ -37,5 +37,10 @@ export default Vue.component('Inbox', {
         params: { id: p.content[evt].id },
       });
     },
+
+    formatTime(t) {
+      /* global moment */
+      return moment(t * 1000).format('MM/DD HH:mm:ss');
+    },
   },
 });

@@ -16,6 +16,9 @@
     </div>
     <div v-if="content !== null">
       <mdc-display>{{ content.title }}</mdc-display>
+      <div class="info-status">
+        <mdc-subheading><mdc-icon icon="access_time"></mdc-icon> {{formatTime(content.time)}}</mdc-subheading>
+      </div>
       <post-inner :html="compiled"></post-inner>
     </div>
   </div>
