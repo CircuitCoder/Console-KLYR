@@ -26,9 +26,12 @@ use actix::{Arbiter, System};
 use actix_web::fs::StaticFileConfig;
 use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
 use actix_web::middleware::Logger;
-use actix_web::{fs, fs::NamedFile, http::Method, server, App, HttpRequest, Result};
+use actix_web::{fs, fs::NamedFile, http::Method, server, App, HttpRequest, Result, HttpResponse, Error};
 use futures::Future;
 use handler::State;
+use std::fs::File;
+//use rand::distributions::Alphanumeric;
+//use rand::{self, Rng};
 
 #[derive(Default)]
 struct NoCacheConfig;
@@ -48,6 +51,15 @@ fn get_index(_: &HttpRequest<State>) -> Result<NamedFile<NoCacheConfig>> {
 		NoCacheConfig,
 	)?)
 }
+
+/*
+fn post_file(req: &HttpRequest<State>) -> Box<Future<Item=HttpResponse, Error=Error>> {
+	let id = rand::thread_rng()
+		.sample_iter(&Alphanumeric)
+		.take(16)
+		.collect::<String>();
+}
+*/
 
 fn build_app() -> App<State> {
 	App::with_state(Default::default())
@@ -125,6 +137,7 @@ fn build_app() -> App<State> {
 fn main() {
 	env_logger::init();
 	// Init database
+    /*
 	let bootstrapper = System::new("setup");
 	let bootstrap = storage::setup();
 	let handle = bootstrap.then(|_| {
@@ -133,8 +146,9 @@ fn main() {
 	});
 	Arbiter::spawn(handle);
 	bootstrapper.run();
+    */
 
 	info!("Starting server...");
-	let server = server::new(build_app).bind("127.0.0.1:8088").unwrap();
+	let server = server::new(build_app).bind("10.11.8.1:80").unwrap();
 	server.run();
 }

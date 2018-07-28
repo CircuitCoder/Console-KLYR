@@ -14,7 +14,10 @@ export default Vue.component('NewPost', {
 
   async mounted() {
     /* global SimpleMDE */
-    this.mde = new SimpleMDE({ element: this.$refs.content });
+    this.mde = new SimpleMDE({
+      element: this.$refs.content,
+      placeholder: 'Test',
+    });
 
     if(this.$route.name === 'EditPost') {
       const post = await request(`/api/posts/${this.$route.params.id}?pending`);
