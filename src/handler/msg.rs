@@ -6,7 +6,6 @@ use handler::AsyncResponse;
 use handler::Request;
 
 pub fn fetch_msgs(req: &Request) -> AsyncResponse {
-	// TODO: use real user id
 	let id = "root";
 	let _state = req.state().clone();
 

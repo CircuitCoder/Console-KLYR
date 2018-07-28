@@ -3,6 +3,7 @@ import { request } from '../util';
 
 export default Vue.component('NewPost', {
   template: tmpl,
+  props: ['user'],
 
   data: () => ({
     title: '',
@@ -33,7 +34,7 @@ export default Vue.component('NewPost', {
       }
       const resp = await request(url, method, {
         title: this.title,
-        author: 'root',
+        author: this.user.id,
         content: this.mde.value(),
         tags: [this.category],
         time: 0, // This is ignored

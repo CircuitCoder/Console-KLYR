@@ -4,6 +4,7 @@ import CONST from '../const';
 
 export default Vue.component('Step', {
   template: tmpl,
+  props: ['user'],
 
   data: () => ({
     content: null,
@@ -114,15 +115,17 @@ export default Vue.component('Step', {
 
   computed: {
     canReply() {
-      // TODO: user privilege
       if(!this.content) return false;
+      if(!this.user) return false;
       if(!this.content.staged) return false;
-      return this.content.assignees.length > 0;
+      return this.content.assignees.includes(this.user.id);
     },
 
     canAssign() {
+      if(!this.user) return false;
       if(!this.content) return false;
       if(!this.content.staged) return false;
+      if(!this.user.groups.includes('coordinators')) return false;
       return this.content.assignees.length === 0;
     },
   },

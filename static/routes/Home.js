@@ -3,6 +3,7 @@ import { request } from '../util';
 
 export default Vue.component('Home', {
   template: tmpl,
+  props: ['user'],
   data: () => ({
     entries: [],
   }),
@@ -24,5 +25,12 @@ export default Vue.component('Home', {
   beforeRouteUpdate(to, from, next) {
     this.update();
     next();
+  },
+
+  computed: {
+    canPost() {
+      console.log(this.user);
+      return this.user && this.user.groups.includes('publishers');
+    },
   },
 });

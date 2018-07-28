@@ -2,7 +2,7 @@ import tmpl from './TreeView.html';
 
 export default Vue.component('TreeView', {
   template: tmpl,
-  props: ['steps'],
+  props: ['steps', 'user'],
   data: () => ({
     reg: {},
   }),
@@ -15,6 +15,12 @@ export default Vue.component('TreeView', {
 
     toggle(id) {
       this.$set(this.reg, id, !this.reg[id]);
+    },
+  },
+
+  computed: {
+    canInstruct() {
+      return this.user && this.user.groups.includes('instructors');
     },
   },
 });

@@ -7,7 +7,6 @@ use handler::AsyncResponse;
 use handler::Request;
 
 pub fn fetch_staged(req: &Request) -> AsyncResponse {
-	// TODO: use real user id
 	let _state = req.state().clone();
 
 	req.state()

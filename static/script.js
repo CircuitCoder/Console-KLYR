@@ -131,7 +131,21 @@ const desc = {
         password: this.password,
       });
 
-      if(resp.ok) this.fetchUser();
+      if(resp.ok) {
+        this.fetchUser();
+        this.$root.$emit('show-snackbar', {
+          message: 'Success',
+        });
+      } else {
+        this.$root.$emit('show-snackbar', {
+          message: 'Login failed, please contact sysadmin.',
+        });
+      }
+    },
+
+    async doLogout() {
+      const resp = await request('/api/auth', 'DELETE');
+      if(resp.ok) window.location.reload();
       else {
         this.$root.$emit('show-snackbar', {
           message: 'Login failed, please contact sysadmin.',
@@ -150,6 +164,17 @@ const desc = {
         this.internalTitle = t;
         document.title = `${t} | KLYR`;
       },
+    },
+
+    canReact() {
+      if(!this.user) return false;
+      return this.user.groups.includes('resolvers')
+        || this.user.groups.includes('coordinators')
+        || this.user.groups.includes('instructors');
+    },
+
+    canChrono() {
+      return this.user && this.user.groups.includes('chronologers');
     },
   },
 };

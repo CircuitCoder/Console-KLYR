@@ -3,6 +3,7 @@ import { request } from '../util';
 
 export default Vue.component('Post', {
   template: tmpl,
+  props: ['user'],
 
   data: () => ({
     content: null,
@@ -96,13 +97,13 @@ export default Vue.component('Post', {
 
   computed: {
     canEdit() {
-      // TODO: user privilege
-      return this.content !== null && this.$route.query.pending;
+      if(!this.user) return false;
+      return this.content !== null && this.$route.query.pending && this.user.id === this.content.author;
     },
 
     canManage() {
-      // TODO: user privilege
-      return this.content !== null && this.$route.query.pending;
+      if(!this.user) return false;
+      return this.content !== null && this.$route.query.pending && this.user.groups.includes('reviewers');
     },
   },
 });
