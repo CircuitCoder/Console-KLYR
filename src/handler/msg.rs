@@ -13,7 +13,7 @@ pub fn fetch_msgs(req: &Request) -> AsyncResponse {
 	req
 		.state()
 		.storage
-		.get_groups(id.to_owned())
+		.get_groups(id)
 		.and_then(move |ids| {
 			let mut rcpts = vec![Rcpt::User(id.to_owned())];
 			rcpts.extend(ids.into_iter().map(Rcpt::Group));

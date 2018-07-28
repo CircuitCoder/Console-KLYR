@@ -49,6 +49,11 @@ const desc = {
     chronoDesc: null,
 
     steps: [],
+    user: null,
+
+    login: false,
+    username: '',
+    password: '',
   },
 
   router,
@@ -112,6 +117,27 @@ const desc = {
 
       requestAnimationFrame(() => this.tick());
     },
+
+    async fetchUser() {
+      this.user = null;
+      try {
+        this.user = await request('/api/auth');
+      } catch(_) { /* Ignore */ }
+    },
+
+    async doLogin() {
+      const resp = await request('/api/auth', 'POST', {
+        username: this.username,
+        password: this.password,
+      });
+
+      if(resp.ok) this.fetchUser();
+      else {
+        this.$root.$emit('show-snackbar', {
+          message: 'Login failed, please contact sysadmin.',
+        });
+      }
+    },
   },
 
   computed: {
@@ -136,6 +162,7 @@ export default function bootstrap() {
   inst.$mount('#app');
 
   inst.startLoop();
+  inst.fetchUser();
 }
 
 /* global window */

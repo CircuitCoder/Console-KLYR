@@ -40,12 +40,6 @@ impl Post {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct User {
-	id: Option<String>,
-	name: String,
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct Step {
 	pub(crate) id: Option<i64>,
 	pub(crate) parent: Option<i64>,
@@ -193,4 +187,22 @@ impl PostRejection {
 			id, comment,
 		}
 	}
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct AuthStatus {
+	pub(crate) uid: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct AuthReq {
+	pub(crate) username: String,
+	pub(crate) password: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct UserSpec {
+	pub(crate) id: String,
+	pub(crate) name: String,
+	pub(crate) groups: Vec<String>,
 }

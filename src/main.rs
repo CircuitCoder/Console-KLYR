@@ -13,8 +13,9 @@ extern crate env_logger;
 extern crate serde_json;
 #[macro_use]
 extern crate log;
-extern crate rand;
 extern crate pulldown_cmark;
+extern crate rand;
+extern crate ring;
 
 mod data;
 mod handler;
@@ -23,6 +24,8 @@ mod util;
 
 use actix::{Arbiter, System};
 use actix_web::fs::StaticFileConfig;
+use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
+use actix_web::middleware::Logger;
 use actix_web::{fs, fs::NamedFile, http::Method, server, App, HttpRequest, Result};
 use futures::Future;
 use handler::State;
@@ -48,8 +51,17 @@ fn get_index(_: &HttpRequest<State>) -> Result<NamedFile<NoCacheConfig>> {
 
 fn build_app() -> App<State> {
 	App::with_state(Default::default())
+		.middleware(Logger::default())
+		.middleware(
+			SessionStorage::new(
+				CookieSessionBackend::signed(&[0; 32]).secure(false))) // TODO: investigate
 		.scope("/api", |scope| {
 			scope
+				.resource("/auth", |r| {
+					r.method(Method::POST).f(handler::auth::login);
+					r.method(Method::DELETE).f(handler::auth::logout);
+					r.method(Method::GET).f(handler::auth::fetch)
+				})
 				.nested("/posts", |scope| {
 					scope
 						.resource("", |r| {

@@ -539,7 +539,7 @@ impl Storage {
 	}
 
 	/* Users */
-	pub fn get_groups(&self, id: String) -> impl Future<Item = Vec<String>, Error = StorageError> {
+	pub fn get_groups(&self, id: &str) -> impl Future<Item = Vec<String>, Error = StorageError> {
 		self.db
 			.send(Command(RespValue::Array(vec![
 				"SMEMBERS".into(),
@@ -547,6 +547,56 @@ impl Storage {
 			])))
 			.from_err()
 			.and_then(parse_string_vec)
+	}
+
+	pub fn get_user_pass_hash(&self, id: &str) -> impl Future<Item = Option<Vec<u8>>, Error = StorageError> {
+		self.db
+			.send(Command(RespValue::Array(vec![
+				"GET".into(),
+				format!("user:{}:pass", id).into_bytes().into(),
+			])))
+			.from_err()
+			.and_then(|input| {
+				match input {
+					Ok(v) => match v {
+						RespValue::Error(e) => {
+							debug!("Redis inner error: {}", e);
+							future::err(StorageError::Format)
+						}
+						RespValue::Nil => future::ok(None),
+						RespValue::SimpleString(s) => future::ok(Some(s.into_bytes())),
+						RespValue::BulkString(s) => future::ok(Some(s)),
+						_ => {
+							future::err(StorageError::Format)
+						}
+					},
+					Err(e) => future::err(StorageError::Redis(e)),
+				}
+			})
+	}
+
+	pub fn get_user_name(&self, id: &str) -> impl Future<Item = Option<String>, Error = StorageError> {
+		self.db
+			.send(Command(RespValue::Array(vec![
+				"GET".into(),
+				format!("user:{}:name", id).into_bytes().into(),
+			])))
+			.from_err()
+			.and_then(|input| {
+				match input {
+					Ok(v) => match v {
+						RespValue::Error(e) => {
+							debug!("Redis inner error: {}", e);
+							future::err(StorageError::Format)
+						}
+						RespValue::Nil => future::ok(None),
+						RespValue::SimpleString(s) => future::ok(Some(s)),
+						RespValue::BulkString(s) => future::ok(String::from_utf8(s).ok()),
+						_ => future::err(StorageError::Format),
+					},
+					Err(e) => future::err(StorageError::Redis(e)),
+				}
+			})
 	}
 
 	/* Messaging */

@@ -6,6 +6,7 @@ pub mod post;
 pub mod chrono;
 pub mod msg;
 pub mod step;
+pub mod auth;
 
 type Request = HttpRequest<State>;
 type AsyncResponse = Box<Future<Item = HttpResponse, Error = Error>>;
