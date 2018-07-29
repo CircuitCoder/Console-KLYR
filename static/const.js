@@ -1,5 +1,22 @@
 export default {
   resolvers: [
     { id: 'resolver', name: 'Resolver' },
+    { id: 'zhangyiyang', name: 'zhangyiyang' },
+    { id: 'zhangzhiquan', name: 'zhangzhiquan' },
+    { id: 'linzhiping', name: 'linzhiping' },
+    { id: 'chenqingyang', name: 'chenqingyang' },
+    { id: 'wangmingyuan', name: 'wangmingyuan' },
+    { id: 'wangyuan', name: 'wangyuan' },
+    { id: 'liweikai', name: 'liweikai' },
+    { id: 'yuhaozhe', name: 'yuhaozhe' },
+    { id: 'sunmuyuan', name: 'sunmuyuan' },
+    { id: 'yangyaoguang', name: 'yangyaoguang' },
+    { id: 'zhaowanru', name: 'zhaowanru' },
+    { id: 'sunyipeng', name: 'sunyipeng' },
+    { id: 'wangyiwei', name: 'wangyiwei' },
+    { id: 'shaoqianhao', name: 'shaoqianhao' },
+    { id: 'zhangyuxiao', name: 'zhangyuxiao' },
+    { id: 'diaoyinfeng', name: 'diaoyinfeng' },
+    { id: 'wangyitong', name: 'wangyitong' },
   ],
 };

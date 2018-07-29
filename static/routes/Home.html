@@ -1,4 +1,4 @@
 <main class="narrow">
-  <display-card v-for="e of entries" :id="e" @click.native="$router.push({ name: 'Post', params: { id: e }})"></display-card>
+  <display-card v-for="e of entries" :key="e" :id="e" @click.native="$router.push({ name: 'Post', params: { id: e }})"></display-card>
   <mdc-fab fixed icon="add" :to="{ name: 'NewPost' }" v-if="canPost">
 </main>

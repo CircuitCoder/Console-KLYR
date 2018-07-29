@@ -7,7 +7,6 @@ export default Vue.component('NewPost', {
 
   data: () => ({
     title: '',
-    category: '',
 
     mde: null,
   }),
@@ -59,4 +58,12 @@ export default Vue.component('NewPost', {
       }
     },
   },
+
+  computed: {
+    category() {
+      if(['美联社', '南华早报', '费加罗报', '新报', '共同社', '金字塔报', '路透社',].includes(this.user.id))
+        return this.user.id;
+      return '专家学者';
+    },
+  }
 });

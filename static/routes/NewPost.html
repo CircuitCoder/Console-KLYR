@@ -8,10 +8,7 @@
           <mdc-textfield class="expand-width" v-model="title" label="Title" box></mdc-textfield>
         </mdc-layout-cell>
         <mdc-layout-cell desktop="6" phone="12" align="bottom">
-          <mdc-select class="expand-width" v-model="category" label="Category" box>
-            <option>A</option>
-            <option>B</option>
-          </mdc-select>
+          <mdc-textfield class="expand-width" v-model="category" label="Category" box disabled></mdc-textfield>
         </mdc-layout-cell>
         <mdc-layout-cell desktop="12" tablet="12" phone="12" align="bottom">
           <textarea ref="content"></textarea>

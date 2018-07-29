@@ -10,6 +10,7 @@ export default Vue.component('Home', {
 
   methods: {
     async update() {
+	    this.entries = [];
       const { tag } = this.$route.query;
       const url = tag ? `/api/posts?tag=${tag}` : '/api/posts';
 
@@ -23,8 +24,8 @@ export default Vue.component('Home', {
   },
 
   beforeRouteUpdate(to, from, next) {
-    this.update();
     next();
+    setTimeout(() => this.update());
   },
 
   computed: {
